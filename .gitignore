@@ -1,0 +1,21 @@
+# Local secrets and developer state
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.codex/
+.agents/
+.aws/
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+
+# Local browser / desktop automation helpers and captures
+.desktop-ui.cjs
+.desktop-*.png
+.avatar-*.png
+test-results/

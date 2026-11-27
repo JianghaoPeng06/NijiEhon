@@ -1,261 +1,135 @@
 <!doctype html>
-<html lang="zh-Hans">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>NijiEhon</title>
-    <style>
-      @font-face {
-        font-family: "Google Sans";
-        src: url("data:font/woff2;base64,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") format("woff2");
-        font-weight: 400 700;
-        font-display: swap;
-      }
-
-      @font-face {
-        font-family: "Noto Sans SC";
-        src: url("data:font/woff2;base64,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") format("woff2");
-        font-weight: 400;
-        font-display: swap;
-        unicode-range: U+5F69, U+672C, U+7ED8, U+8679;
-      }
-
-      body {
-        margin: 0;
-        min-height: 100vh;
-        min-height: 100svh;
-        display: grid;
-        place-items: center;
-        color: #202124;
-        background: #fff;
-        font-family: "Google Sans", "Noto Sans SC", system-ui, sans-serif;
-        text-align: center;
-      }
-
-      main {
-        padding: 2rem 1.5rem;
-      }
-
-      h1 {
-        margin: 0;
-        font-size: clamp(3.125rem, calc(1.75rem + 6vw), 7rem);
-        font-weight: 650;
-        line-height: 1;
-        letter-spacing: -0.055em;
-      }
-
-      .subtitle {
-        margin: 1rem 0 0;
-        color: #3c4043;
-        font-size: clamp(1.125rem, calc(1rem + 0.5vw), 1.375rem);
-        line-height: 1.5;
-        letter-spacing: 0.16em;
-      }
-
-      .status {
-        margin: 2rem 0 0;
-        color: #62676d;
-        font-size: 1rem;
-        font-weight: 500;
-        line-height: 1.5;
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <h1 lang="en">NijiEhon</h1>
-      <p class="subtitle">彩虹绘本</p>
-      <p class="status" lang="en">Coming Soon</p>
-    </main>
-  </body>
-<!-- Embedded Google Fonts; licenses below accompany the font files.
-
-Copyright 2025 The Google Sans Project Authors (https://github.com/googlefonts/googlesans)
-
-This Font Software is licensed under the SIL Open Font License, Version 1.1.
-This license is copied below, and is also available with a FAQ at:
-https://openfontlicense.org
-
-
------------------------------------------------------------
-SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
------------------------------------------------------------
-
-PREAMBLE
-The goals of the Open Font License (OFL) are to stimulate worldwide
-development of collaborative font projects, to support the font creation
-efforts of academic and linguistic communities, and to provide a free and
-open framework in which fonts may be shared and improved in partnership
-with others.
-
-The OFL allows the licensed fonts to be used, studied, modified and
-redistributed freely as long as they are not sold by themselves. The
-fonts, including any derivative works, can be bundled, embedded, 
-redistributed and/or sold with any software provided that any reserved
-names are not used by derivative works. The fonts and derivatives,
-however, cannot be released under any other type of license. The
-requirement for fonts to remain under this license does not apply
-to any document created using the fonts or their derivatives.
-
-DEFINITIONS
-"Font Software" refers to the set of files released by the Copyright
-Holder(s) under this license and clearly marked as such. This may
-include source files, build scripts and documentation.
-
-"Reserved Font Name" refers to any names specified as such after the
-copyright statement(s).
-
-"Original Version" refers to the collection of Font Software components as
-distributed by the Copyright Holder(s).
-
-"Modified Version" refers to any derivative made by adding to, deleting,
-or substituting -- in part or in whole -- any of the components of the
-Original Version, by changing formats or by porting the Font Software to a
-new environment.
-
-"Author" refers to any designer, engineer, programmer, technical
-writer or other person who contributed to the Font Software.
-
-PERMISSION & CONDITIONS
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of the Font Software, to use, study, copy, merge, embed, modify,
-redistribute, and sell modified and unmodified copies of the Font
-Software, subject to the following conditions:
-
-1) Neither the Font Software nor any of its individual components,
-in Original or Modified Versions, may be sold by itself.
-
-2) Original or Modified Versions of the Font Software may be bundled,
-redistributed and/or sold with any software, provided that each copy
-contains the above copyright notice and this license. These can be
-included either as stand-alone text files, human-readable headers or
-in the appropriate machine-readable metadata fields within text or
-binary files as long as those fields can be easily viewed by the user.
-
-3) No Modified Version of the Font Software may use the Reserved Font
-Name(s) unless explicit written permission is granted by the corresponding
-Copyright Holder. This restriction only applies to the primary font name as
-presented to the users.
-
-4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
-Software shall not be used to promote, endorse or advertise any
-Modified Version, except to acknowledge the contribution(s) of the
-Copyright Holder(s) and the Author(s) or with their explicit written
-permission.
-
-5) The Font Software, modified or unmodified, in part or in whole,
-must be distributed entirely under this license, and must not be
-distributed under any other license. The requirement for fonts to
-remain under this license does not apply to any document created
-using the Font Software.
-
-TERMINATION
-This license becomes null and void if any of the above conditions are
-not met.
-
-DISCLAIMER
-THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
-OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
-COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
-DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
-OTHER DEALINGS IN THE FONT SOFTWARE.
-
-Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'
-
-This Font Software is licensed under the SIL Open Font License, Version 1.1.
-This license is copied below, and is also available with a FAQ at:
-https://scripts.sil.org/OFL
-
-
------------------------------------------------------------
-SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
------------------------------------------------------------
-
-PREAMBLE
-The goals of the Open Font License (OFL) are to stimulate worldwide
-development of collaborative font projects, to support the font creation
-efforts of academic and linguistic communities, and to provide a free and
-open framework in which fonts may be shared and improved in partnership
-with others.
-
-The OFL allows the licensed fonts to be used, studied, modified and
-redistributed freely as long as they are not sold by themselves. The
-fonts, including any derivative works, can be bundled, embedded, 
-redistributed and/or sold with any software provided that any reserved
-names are not used by derivative works. The fonts and derivatives,
-however, cannot be released under any other type of license. The
-requirement for fonts to remain under this license does not apply
-to any document created using the fonts or their derivatives.
-
-DEFINITIONS
-"Font Software" refers to the set of files released by the Copyright
-Holder(s) under this license and clearly marked as such. This may
-include source files, build scripts and documentation.
-
-"Reserved Font Name" refers to any names specified as such after the
-copyright statement(s).
-
-"Original Version" refers to the collection of Font Software components as
-distributed by the Copyright Holder(s).
-
-"Modified Version" refers to any derivative made by adding to, deleting,
-or substituting -- in part or in whole -- any of the components of the
-Original Version, by changing formats or by porting the Font Software to a
-new environment.
-
-"Author" refers to any designer, engineer, programmer, technical
-writer or other person who contributed to the Font Software.
-
-PERMISSION & CONDITIONS
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of the Font Software, to use, study, copy, merge, embed, modify,
-redistribute, and sell modified and unmodified copies of the Font
-Software, subject to the following conditions:
-
-1) Neither the Font Software nor any of its individual components,
-in Original or Modified Versions, may be sold by itself.
-
-2) Original or Modified Versions of the Font Software may be bundled,
-redistributed and/or sold with any software, provided that each copy
-contains the above copyright notice and this license. These can be
-included either as stand-alone text files, human-readable headers or
-in the appropriate machine-readable metadata fields within text or
-binary files as long as those fields can be easily viewed by the user.
-
-3) No Modified Version of the Font Software may use the Reserved Font
-Name(s) unless explicit written permission is granted by the corresponding
-Copyright Holder. This restriction only applies to the primary font name as
-presented to the users.
-
-4) The name(s) of the Copyright Holder(s) or the Author(s) of the Font
-Software shall not be used to promote, endorse or advertise any
-Modified Version, except to acknowledge the contribution(s) of the
-Copyright Holder(s) and the Author(s) or with their explicit written
-permission.
-
-5) The Font Software, modified or unmodified, in part or in whole,
-must be distributed entirely under this license, and must not be
-distributed under any other license. The requirement for fonts to
-remain under this license does not apply to any document created
-using the Font Software.
-
-TERMINATION
-This license becomes null and void if any of the above conditions are
-not met.
-
-DISCLAIMER
-THE FONT SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
-OF COPYRIGHT, PATENT, TRADEMARK, OR OTHER RIGHT. IN NO EVENT SHALL THE
-COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
-DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
-OTHER DEALINGS IN THE FONT SOFTWARE.
--->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>国际数字生活 · NijiEhon</title>
+<link rel="preload" href="assets/fonts/google-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="style.css">
+<script defer src="auth-config.js"></script>
+<script defer src="assets/vendor/supabase-2.119.2.js"></script>
+<script defer src="auth.js"></script>
+<script defer src="site.js">
+</script>
+</head>
+<body>
+<header>
+<a class="brand" href="index.html">NijiEhon</a>
+<nav aria-label="主导航">
+<div class="nav-group"><a class="nav-link" href="research.html">研究</a></div>
+<div class="nav-group"><a class="nav-link" href="products.html">产品</a></div>
+<div class="nav-group"><details><summary>关于</summary><div>
+<a href="terms.html">服务条款</a>
+<a href="privacy.html">隐私政策</a>
+<a href="statement.html">声明</a>
+</div></details></div>
+<div class="nav-group"><details id="contact-menu"><summary>联系</summary><div>
+<a class="contact-link" href="https://x.com/JianghaoPeng" target="_blank" rel="noopener noreferrer" aria-label="X（新窗口打开）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3h4l12 18h-4L4 3ZM20 3l-6.5 7.5M4 21l6.5-7.5"/></svg><span>X</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+<a class="contact-link" href="https://t.me/NijiEhon" target="_blank" rel="noopener noreferrer" aria-label="Telegram（新窗口打开）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m9.78 18.65.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19l-9.48 5.99-4.1-1.28c-.88-.25-.89-.86.2-1.3L19.81 4.6c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.06-1.99 1.93c-.23.23-.42.42-.83.36Z"/></svg><span>Telegram</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+<a class="contact-link" href="mailto:pengjasper@icloud.com" aria-label="邮箱（打开邮件应用）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg><span>邮箱</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+<a href="donate.html">捐赠</a>
+</div></details></div>
+</nav>
+<button class="search" type="button" aria-label="搜索" aria-haspopup="dialog" aria-controls="site-search" aria-expanded="false"><span aria-hidden="true"></span></button>
+<a class="login" href="index.html#login">登录</a>
+<a class="avatar" href="account.html" aria-label="个人中心（未登录）"><img data-user-avatar src="assets/default-avatar.png" width="32" height="32" alt=""></a>
+</header>
+<main>
+<section class="hero">
+<div>
+<h1>欢迎！<br>国际化的数字生活<br>从这里开始</h1>
+<p>发现境外值得用的产品，了解选择、开通和日常使用的方法。</p>
+<a class="pill dark" href="products.html">探索产品</a> <a class="pill" href="#contact-menu" data-open-contact>和我聊聊</a>
+</div>
+<form id="login" aria-busy="true">
+<h2>登录以使用完整功能</h2>
+<div>
+<div id="email-login" hidden>
+<p class="login-divider">输入邮箱，验证后即可登录或注册</p>
+<input id="login-email" type="email" required autocomplete="email" aria-label="电子邮箱" placeholder="输入您的电子邮箱" data-auth-control disabled>
+<div id="email-code-step" hidden>
+<input id="login-code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" maxlength="10" aria-label="邮箱验证码" placeholder="输入邮箱验证码" data-auth-control disabled>
+<div class="code-actions"><button id="resend-code" type="button" data-auth-control disabled>重新发送验证码</button><button id="change-email" type="button" data-auth-control disabled>更换邮箱</button></div>
+</div>
+<button id="email-submit" class="dark" type="submit" data-auth-control disabled>获取邮箱验证码</button>
+</div>
+<p class="auth-status" data-auth-status role="status" aria-live="polite">正在确认登录状态…</p>
+<small>首次登录将自动创建账号 · <a href="privacy.html">隐私政策</a></small>
+<noscript><p>请开启 JavaScript 后登录。</p></noscript>
+</div>
+</form>
+<div id="account-card" hidden>
+<h2>欢迎回来，<span data-account-name></span></h2>
+<img class="account-card-avatar" data-user-avatar src="assets/default-avatar.png" width="72" height="72" alt="我的头像">
+<div><a class="pill dark" href="account.html">进入个人中心</a><button type="button" data-sign-out data-auth-control>退出登录</button></div>
+<p class="auth-status" data-auth-status role="status"></p>
+</div>
+</section>
+<img class="banner" src="assets/station.jpg" alt="大阪站建筑外景">
+<section>
+<h2>产品：从你需要的开始 <a href="products.html">查看全部产品</a>
+</h2>
+<div class="grid">
+<a class="tile" href="product-0.html" data-region="美国" data-category="通信">
+<img class="cover photo-placeholder" src="assets/placeholders/product-ultra.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">美国 Ultra Mobile 电话卡</a>
+<a class="tile" href="product-1.html" data-region="英国" data-category="通信">
+<img class="cover photo-placeholder" src="assets/placeholders/product-giffgaff.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">英国 giffgaff 电话卡</a>
+<a class="tile" href="product-2.html" data-region="多地区" data-category="账户">
+<img class="cover photo-placeholder" src="assets/placeholders/product-apple.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">Apple 账户</a>
+</div>
+</section>
+<section>
+<h2>研究 <a href="research.html">查看全部研究</a>
+</h2>
+<div class="rows">
+<a href="guide-0.html">
+<img class="mini photo-placeholder" src="assets/placeholders/guide-number.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">第一次选择海外号码</a>
+<a href="guide-1.html">
+<img class="mini photo-placeholder" src="assets/placeholders/guide-activation.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">收到 SIM 卡后如何开始</a>
+<a href="guide-2.html">
+<img class="mini photo-placeholder" src="assets/placeholders/guide-cloud.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">开通云服务器前的准备</a>
+</div>
+</section>
+<section class="statement">
+<h2><a class="statement-link" href="statement.html">声明</a></h2>
+<p>产品的适用地区、价格和服务条件以供应商官方说明为准。</p>
+</section>
+</main>
+<footer id="footer" aria-label="页脚">
+<nav class="footer-crumb" aria-label="当前位置"><span aria-current="page">首页</span></nav>
+<div class="footer-links">
+<div><b><a href="research.html">研究</a></b></div>
+<div><b><a href="products.html">产品</a></b></div>
+<div>
+<b>关于</b>
+<a href="terms.html">服务条款</a>
+<a href="privacy.html">隐私政策</a>
+<a href="statement.html">声明</a>
+</div>
+<div>
+<b>联系</b>
+<a class="contact-link" href="https://x.com/JianghaoPeng" target="_blank" rel="noopener noreferrer" aria-label="X（新窗口打开）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3h4l12 18h-4L4 3ZM20 3l-6.5 7.5M4 21l6.5-7.5"/></svg><span>X</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+<a class="contact-link" href="https://t.me/NijiEhon" target="_blank" rel="noopener noreferrer" aria-label="Telegram（新窗口打开）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m9.78 18.65.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19l-9.48 5.99-4.1-1.28c-.88-.25-.89-.86.2-1.3L19.81 4.6c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.06-1.99 1.93c-.23.23-.42.42-.83.36Z"/></svg><span>Telegram</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+<a class="contact-link" href="mailto:pengjasper@icloud.com" aria-label="邮箱（打开邮件应用）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg><span>邮箱</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+<a href="donate.html">捐赠</a>
+</div>
+<div>
+<b>账户</b>
+<a href="index.html#login">登录</a>
+<a href="account.html">个人中心</a>
+</div>
+</div>
+<div class="footer-bottom">
+<p class="footer-copyright">NijiEhon <span class="copyright-mark">©</span> 2026 <span class="footer-version" aria-label="网站版本 v0.1.0">v0.1.0</span></p>
+<details class="footer-language">
+<summary aria-label="选择语言，当前：简体中文 中国">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg>
+<span>简体中文 中国</span><span class="language-chevron" aria-hidden="true"></span>
+</summary>
+<div class="language-options"><button type="button" lang="zh-CN" aria-current="true">简体中文 中国 <span aria-hidden="true">✓</span></button></div>
+</details>
+</div>
+</footer>
+</body>
 </html>
