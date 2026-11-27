@@ -136,6 +136,6 @@ node tests/auth-browser.cjs
 3. 填写 Summary → Commit to main → Push origin。
 4. 发布到网站取决于当前托管平台的 Git 集成；仓库推送和 GitHub Release 不等于修改 DNSSEC，也不会自动配置 Supabase。
 
-正式发新版本：更新 VERSION、各页面页脚版本及 RELEASE_NOTES.md，运行 node scripts/check.cjs，再提交。GitHub Desktop 的 History 中右键目标提交 → Create Tag，输入如 v0.1.1，然后 Push origin（推送标签）。仓库中的 release.yml 会在版本标签推送后检查并创建同名 GitHub Release；普通修改只推送 main，不会每次都创建 Release。
+正式发新版本：更新 VERSION、各页面页脚版本及 RELEASE_NOTES.md，运行 node scripts/check.cjs，再提交。GitHub Desktop 的 History 中右键目标提交 → Create Tag，输入如 v0.1.1，然后 Push origin（推送标签）。启用且允许运行 GitHub Actions 时，release.yml 可在版本标签推送后检查并创建同名 GitHub Release；若 Actions 未启动，到 GitHub → Releases → Draft a new release，选择已推送的标签，填写 RELEASE_NOTES.md 的内容并发布。普通修改只推送 main，不会每次都创建 Release。v0.1.0 的代码和标签已通过 GitHub Desktop 推送，Release 通过 GitHub 发布页完成。
 
 版本号必须一致，例如 VERSION 的 0.1.0 对应标签 v0.1.0。不要移动已经发布的版本标签；后续版本使用新的编号。GitHub Desktop 官方说明：[提交与推送](https://docs.github.com/en/desktop/adding-and-cloning-repositories/adding-a-repository-from-your-local-computer-to-github-desktop)、[管理标签](https://docs.github.com/en/desktop/managing-commits/managing-tags-in-github-desktop)。
