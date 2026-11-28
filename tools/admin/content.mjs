@@ -5,7 +5,7 @@ const currency = 'USD';
 export const imagePath = /^assets\/(?:placeholders\/[a-z0-9-]+\.(?:jpg|png|webp)|station\.jpg|content\/[a-f0-9]{64}\.(?:jpg|png|webp))$/;
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const formatter = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: 'numeric', day: 'numeric' });
-const blockTypes = ['text', 'heading', 'list', 'quote', 'image', 'cover', 'html'];
+const blockTypes = ['text', 'heading', 'subheading', 'list', 'ordered', 'quote', 'image', 'cover', 'divider', 'html'];
 const usd = new Intl.NumberFormat('zh-CN', { style: 'currency', currency, currencyDisplay: 'code' });
 
 function field(value, label, max, required = false) {
@@ -60,7 +60,8 @@ function articleBlocks(values) {
       if (!source) return [];
       return [{ type, image: source, alt: field(block.alt, '图片描述', 180), caption }];
     }
-    const text = field(block.text, '正文块', type === 'heading' ? 160 : 40000);
+    if (type === 'divider') return [{ type }];
+    const text = field(block.text, '正文块', type === 'heading' || type === 'subheading' ? 160 : 40000);
     return text ? [{ type, text }] : [];
   });
   if (normalized.reduce((length, block) => length + (block.text?.length || 0), 0) > 40000) throw new Error('正文总长度最多 40000 个字符。');
@@ -84,7 +85,7 @@ export function normalizeRecord(collection, values) {
   };
   if (article) {
     const blocks = articleBlocks(values);
-    if (!blocks.length && status === 'published') throw new Error('发布文章至少需要一个正文块。');
+    if (status === 'published' && !blocks.some(block => block.type !== 'divider')) throw new Error('发布文章至少需要一个正文内容块。');
     const rawTags = Array.isArray(values.tags) ? values.tags : (values.tags || '').split(/[,，、\n]/);
     const tags = [...new Set(rawTags.map(tag => field(tag, '标签', 24)).filter(Boolean))];
     if (tags.length > 12) throw new Error('每篇文章最多 12 个标签。');
@@ -248,7 +249,14 @@ function articleCard(item, featured = false, saved = false) {
 function bodyBlock(block, item, headingTag = 'h2', hero = false) {
   switch (block.type) {
     case 'heading': return `<${headingTag}>${escape(block.text)}</${headingTag}>`;
-    case 'list': return `<ul>${block.text.split(/\r?\n/).filter(line => line.trim()).map(line => `<li>${escape(line)}</li>`).join('')}</ul>`;
+    case 'subheading': return `<h3>${escape(block.text)}</h3>`;
+    case 'list':
+    case 'ordered': {
+      const tag = block.type === 'ordered' ? 'ol' : 'ul';
+      const items = block.text.split(/\r?\n/).filter(line => line.trim()).map(line => `<li>${escape(line)}</li>`).join('');
+      return `<${tag}>${items}</${tag}>`;
+    }
+    case 'divider': return '<hr>';
     case 'quote': return `<blockquote><p>${escape(block.text).replace(/\r?\n/g, '<br>')}</p></blockquote>`;
     case 'image':
     case 'cover': {

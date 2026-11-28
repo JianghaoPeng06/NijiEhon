@@ -18,9 +18,10 @@ const hash = content => createHash('sha256').update(content).digest('hex');
 const json = data => `${JSON.stringify(data, null, 2)}\n`;
 const readSite = file => readFileSync(path.join(root, file), 'utf8').replaceAll('\r\n', '\n');
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.woff2': 'font/woff2' };
-const adminFiles = new Map([['/', 'index.html'], ['/app.js', 'app.js'], ['/admin.css', 'admin.css'], ['/slug.js', 'slug.js'], ['/purchase-options.js', 'purchase-options.js']]);
+const adminFiles = new Map([['/', 'index.html'], ['/app.js', 'app.js'], ['/admin.css', 'admin.css'], ['/purchase-options.js', 'purchase-options.js']]);
 const publicPath = /^(?:[a-z0-9-]+\.(?:html|css|js)|assets\/(?:[a-z0-9_-]+\/)*[a-zA-Z0-9_.-]+\.(?:js|css|jpg|png|webp|woff2))$/;
 const retiredPath = /^(?:product|guide)-[a-z0-9]+(?:-[a-z0-9]+)*\.html$/;
+const deleteEndpoints = new Map([['/api/delete-product', 'products'], ['/api/delete-article', 'articles']]);
 
 function normalizeData(data) {
   data.poster = normalizePoster(data.poster);
@@ -171,7 +172,8 @@ async function handle(request, response) {
     if (endpoint === '/api/state') return sendJson(response, 200, state());
     if (endpoint.startsWith('/preview/')) return preview(response, url, endpoint.slice(9) || 'index.html');
   }
-  if (request.method !== 'POST' || !['/api/upload', '/api/save', '/api/delete-product', '/api/generate', '/api/preview-article'].includes(endpoint)) return sendJson(response, 404, { error: '找不到此操作。' });
+  const deletion = deleteEndpoints.get(endpoint);
+  if (request.method !== 'POST' || (!deletion && !['/api/upload', '/api/save', '/api/generate', '/api/preview-article'].includes(endpoint))) return sendJson(response, 404, { error: '找不到此操作。' });
   if (request.headers.origin !== origin) return sendJson(response, 403, { error: '请从后台页面操作。' });
   if (endpoint === '/api/upload') {
     const bytes = await readBody(request, 10 * 1024 * 1024);
@@ -182,14 +184,17 @@ async function handle(request, response) {
   const payload = JSON.parse((await readBody(request, 256 * 1024)).toString());
   const saved = state();
   if (payload.revision !== saved.revision) return sendJson(response, 409, { error: '内容已在其他窗口修改。请复制未保存的文字，刷新后继续。' });
-  if (endpoint === '/api/delete-product') {
-    const index = saved.data.products.findIndex(item => item.slug === payload.slug);
-    if (index < 0) return sendJson(response, 404, { error: '找不到要删除的商品。' });
-    saved.data.products.splice(index, 1);
-    saved.data.retired.push(route('products', payload.slug));
-    for (const article of saved.data.articles) article.related = article.related.filter(slug => slug !== payload.slug);
+  if (deletion) {
+    const list = saved.data[deletion];
+    const index = list.findIndex(item => item.slug === payload.slug);
+    if (index < 0) return sendJson(response, 404, { error: deletion === 'articles' ? '找不到要删除的文章。' : '找不到要删除的商品。' });
+    list.splice(index, 1);
+    saved.data.retired.push(route(deletion, payload.slug));
+    if (deletion === 'products') {
+      for (const article of saved.data.articles) article.related = article.related.filter(slug => slug !== payload.slug);
+    }
     saveDraft(saved);
-    const selected = saved.data.products[Math.min(index, saved.data.products.length - 1)]?.slug;
+    const selected = list[Math.min(index, list.length - 1)]?.slug;
     return sendJson(response, 200, { ...saved, selected });
   }
   if (endpoint === '/api/preview-article') {
@@ -207,7 +212,7 @@ async function handle(request, response) {
     } else {
       if (!collections.includes(payload.collection)) throw new Error('无法识别内容类型。');
       const values = payload.values;
-      if (!values.slug?.trim()) {
+      if (payload.collection === 'articles' || !values.slug?.trim()) {
         if (payload.original !== null) values.slug = payload.original;
         else {
           const reserved = contentSlugs(saved.data, payload.collection);

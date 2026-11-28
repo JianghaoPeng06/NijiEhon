@@ -65,7 +65,10 @@ h1 { font-size: clamp(1.45rem, 2.4vw, 1.85rem); margin: 0 0 .35rem; letter-spaci
 .editor-header p, .hint, .placeholder, .preview-note { color: var(--muted); line-height: 1.55; margin: 0; overflow-wrap: anywhere }
 .fields { display: grid; gap: 1rem }
 .fields .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem }
-.editor-section-title, .body-editor > h2 { margin: 0; font-size: 1rem }
+.article-pair { align-items: start }
+.article-pair :is(input, select) { height: 2.5rem; min-width: 0 }
+.article-pair > .hint { grid-column: 1 / -1 }
+.editor-section-title { margin: 0; font-size: 1rem }
 #variants { display: grid; gap: .75rem }
 .variant-methods { display: flex; flex-wrap: wrap; gap: .5rem }
 .variant-methods button { min-height: 2.4rem; padding-inline: .8rem; background: var(--paper); border-color: var(--line); font-size: .875rem }
@@ -79,10 +82,15 @@ h1 { font-size: clamp(1.45rem, 2.4vw, 1.85rem); margin: 0 0 .35rem; letter-spaci
 .body-editor { display: grid; gap: .75rem }
 .block-list { display: grid; gap: .75rem }
 .body-block { background: #f8faf8 }
+.body-block[data-drop-side="before"] { box-shadow: 0 -3px var(--ring) }
+.body-block[data-drop-side="after"] { box-shadow: 0 3px var(--ring) }
 .block-content textarea { background: var(--paper) }
+.block-content hr { width: 100%; border: 0; border-top: 1px solid var(--line) }
 .block-tools { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: space-between; align-items: center }
-.block-tools select { width: auto; min-width: 7rem; background-color: var(--paper) }
-.block-tools > div, .block-add { display: flex; flex-wrap: wrap; gap: .25rem }
+.block-tools select { width: auto; min-width: 0; background-color: var(--paper) }
+.block-tools > div, .block-add { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem }
+.block-grip { display: grid; place-items: center; width: 1.75rem; height: 2.5rem; cursor: grab; color: var(--muted); font-size: 1.25rem; user-select: none }
+.block-grip:active { cursor: grabbing }
 .block-tools button { min-width: 2.75rem; padding: .25rem; background: var(--paper); border-color: var(--line) }
 .block-add button { padding-inline: .75rem }
 label:not(.button, .check) { display: grid; gap: .375rem; font-size: .9rem; font-weight: 650; min-width: 0 }
@@ -143,5 +151,5 @@ legend { padding: 0 .25rem; font-size: .9rem; font-weight: 650 }
   .top-actions { grid-row: 2 }
   .module-tabs { grid-row: 3 }
   .module-tabs button { padding-inline: .65rem }
-  .fields .time-fields { grid-template-columns: minmax(0, 1fr) }
+  .fields .article-pair { grid-template-columns: minmax(0, 1fr) }
 }

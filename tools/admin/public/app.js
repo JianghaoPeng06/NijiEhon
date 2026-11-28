@@ -1,4 +1,3 @@
-import { articleSlug, contentSlugs } from './slug.js';
 import { fulfillmentLabels } from './purchase-options.js';
 
 const get = selector => document.querySelector(selector);
@@ -105,10 +104,9 @@ function drawList() {
 }
 
 const statusField = '<label>状态<select name="status"><option value="draft">草稿</option><option value="published"></option><option value="archived"></option></select></label>';
-const articleAddress = '<label>文章网址<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="60" placeholder="随标题自动生成"><output id="slug-preview" class="hint" hidden></output></label>';
-const common = article => `
-  <label>${article ? '标题' : '商品名称'}<input name="title" maxlength="100" required></label>
-  ${article ? `<div class="pair">${articleAddress}${statusField}</div>` : `${statusField}<p class="hint">草稿仅供浏览，上架可购买，下架后隐藏。</p>`}
+const productInfo = `
+  <label>商品名称<input name="title" maxlength="100" required></label>
+  ${statusField}<p class="hint">草稿仅供浏览，上架可购买，下架后隐藏。</p>
   <label>简介<textarea name="summary" rows="2" maxlength="500"></textarea></label>`;
 const keywords = '<label>搜索关键词<input name="keywords" maxlength="200" placeholder="多个关键词用空格分隔"></label>';
 const weight = `<label>推荐权重<select name="weight"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select><span class="hint">仅用于商品推荐，5 优先于 1。</span></label>`;
@@ -127,12 +125,16 @@ const productDescription = `
   <label>交付方式<input name="delivery" maxlength="150"></label>
   <label>购买须知<textarea name="notice" rows="3" maxlength="2000"></textarea></label>
   <label>官方网站<input name="url" type="url" placeholder="https://" maxlength="2000"></label>`;
-const articleFields = `
-  <label>英文标题<input name="englishTitle" maxlength="100" placeholder="选填，用于生成可读的文章网址"></label>
-  <label>作者<input name="author" maxlength="80" placeholder="NijiEhon" list="authors"></label>
-  <datalist id="authors"></datalist>
-  <div class="pair time-fields"><label>发布时间<input name="date" type="datetime-local"><span class="hint" id="timezone"></span></label><label>阅读时间（分钟）<input name="read" type="number" min="1" max="300" placeholder="自动估算"></label></div>
-  <label class="check"><input name="pinned" type="checkbox">置顶</label>
+const articleInfo = `
+  <div class="pair article-pair">${statusField}<label>作者<input name="author" type="text" maxlength="80" placeholder="NijiEhon"></label></div>
+  <div class="pair article-pair"><label>发布时间<input name="date" type="datetime-local" aria-describedby="timezone"></label><label>阅读时间（分钟）<input name="read" type="number" min="1" max="300" placeholder="自动估算"></label>
+  <p class="hint" id="timezone"></p></div>
+  <label class="check"><input name="pinned" type="checkbox">置顶</label>`;
+const articleTitle = `
+  <label>标题<input name="title" maxlength="100" required></label>
+  <label>英文标题<input name="englishTitle" maxlength="100" placeholder="选填" aria-describedby="english-title-hint"><span class="hint" id="english-title-hint">首次保存时用于生成网址。</span></label>
+  <label>导语<textarea name="summary" rows="2" maxlength="500"></textarea></label>`;
+const articleDetails = `
   <label>标签<input name="tags" placeholder="输入标签，用逗号分隔"><span class="hint">标签显示在文章页，也可在网站搜索中查找。</span></label>
   <fieldset id="related"><legend>相关商品</legend></fieldset>`;
 const posterFields = `
@@ -359,7 +361,11 @@ function editVariants(container, existing, existingNotes, priceMode, markDirty) 
   return { variants, methodNotes, drawVariants, validate };
 }
 
-const blockTypes = { text: '段落', heading: '小标题', list: '列表', quote: '引用', image: '图片', cover: '用卡片封面', html: 'HTML' };
+const blockTypes = {
+  text: '段落', heading: '小标题', subheading: '次级小标题', quote: '引用',
+  list: '项目列表', ordered: '编号列表', image: '图片', cover: '用卡片封面', divider: '分隔线', html: 'HTML'
+};
+const blockTypeOptions = Object.entries(blockTypes).map(([type, label]) => `<option value="${type}">${label}</option>`).join('');
 
 function editBlocks(container, existing, markDirty) {
   const blocks = existing?.length ? existing.map(block => ({ ...block })) : [{ type: 'text' }];
@@ -367,11 +373,16 @@ function editBlocks(container, existing, markDirty) {
   list.className = 'block-list';
   const add = document.createElement('div');
   add.className = 'block-add';
-  const section = document.createElement('section');
-  section.className = 'body-editor';
-  section.innerHTML = '<h2>正文</h2><p class="hint">每个内容块都可以插入、移动或删除。</p>';
-  section.append(list, add);
-  container.append(section);
+  container.className = 'body-editor';
+  container.innerHTML = '<p class="hint">拖动模块左侧的手柄或用箭头排序。粘贴带空行的文字会自动拆成段落。</p>';
+  container.append(list, add);
+  let dragged = null;
+
+  function focusBlock(index) {
+    const row = list.children[index];
+    const field = row.querySelector('.block-content input, .block-content textarea') || row.querySelector('select');
+    field.focus();
+  }
 
   function insert(index, type) {
     if (busy) return;
@@ -379,20 +390,29 @@ function editBlocks(container, existing, markDirty) {
     blocks.splice(index, 0, { type });
     markDirty();
     drawBlocks();
-    list.children[index]?.querySelector('textarea, input:not([type=file]), select')?.focus();
+    focusBlock(index);
+  }
+
+  function move(index, target) {
+    if (busy || target === index) return;
+    blocks.splice(target, 0, blocks.splice(index, 1)[0]);
+    markDirty();
+    drawBlocks();
+    list.children[target].querySelector('select').focus();
   }
 
   function drawBlocks() {
     list.replaceChildren(...blocks.map((block, index) => {
       const row = document.createElement('fieldset');
       row.className = 'body-block fields';
-      row.innerHTML = `<div class="block-tools"><select aria-label="内容块类型">${Object.entries(blockTypes).map(([type, label]) => `<option value="${type}">${label}</option>`).join('')}</select><div>
+      row.dataset.index = index;
+      row.innerHTML = `<div class="block-tools"><div class="block-kind"><span class="block-grip" draggable="true" aria-hidden="true" title="拖动排序">⠿</span><select aria-label="第 ${index + 1} 个正文模块的类型">${blockTypeOptions}</select></div><div>
         <button type="button" data-block="up" aria-label="上移" title="上移">↑</button><button type="button" data-block="down" aria-label="下移" title="下移">↓</button><button type="button" data-block="insert" aria-label="在下方插入段落" title="在下方插入段落">＋</button><button type="button" data-block="remove" aria-label="移除内容块" title="移除内容块">×</button></div></div><div class="block-content fields"></div>`;
       const select = row.querySelector('select');
       select.value = block.type;
       select.onchange = () => {
         if (busy) return;
-        blocks[index] = { type: select.value, text: block.text };
+        block.type = select.value;
         markDirty();
         drawBlocks();
         list.children[index].querySelector('select').focus();
@@ -401,15 +421,8 @@ function editBlocks(container, existing, markDirty) {
       const down = row.querySelector('[data-block=down]');
       up.disabled = index === 0;
       down.disabled = index === blocks.length - 1;
-      function move(target) {
-        if (busy) return;
-        [blocks[index], blocks[target]] = [blocks[target], blocks[index]];
-        markDirty();
-        drawBlocks();
-        list.children[target].querySelector('select').focus();
-      }
-      up.onclick = () => move(index - 1);
-      down.onclick = () => move(index + 1);
+      up.onclick = () => move(index, index - 1);
+      down.onclick = () => move(index, index + 1);
       row.querySelector('[data-block=insert]').onclick = () => insert(index + 1, 'text');
       row.querySelector('[data-block=remove]').onclick = () => {
         if (busy) return;
@@ -426,11 +439,13 @@ function editBlocks(container, existing, markDirty) {
           content.insertAdjacentHTML('beforeend', '<label>图片描述<input data-key="alt" maxlength="180"></label>');
         }
         content.insertAdjacentHTML('beforeend', '<label>图注<input data-key="caption" maxlength="300"></label>');
+      } else if (block.type === 'divider') {
+        content.innerHTML = '<hr>';
       } else {
-        const isHeading = block.type === 'heading';
+        const isHeading = block.type === 'heading' || block.type === 'subheading';
         content.innerHTML = `<label>${blockTypes[block.type]}${isHeading ? '<input data-key="text" maxlength="160">' : '<textarea data-key="text" rows="4" maxlength="40000"></textarea>'}</label>`;
         if (block.type === 'html') content.insertAdjacentHTML('beforeend', '<p class="hint">可写 HTML 和 CSS。脚本和表单在预览与网站上均不可用。</p>');
-        if (block.type === 'list') content.insertAdjacentHTML('beforeend', '<p class="hint">每行一项。</p>');
+        if (block.type === 'list' || block.type === 'ordered') content.querySelector('textarea').placeholder = '每行一项';
       }
       for (const input of content.querySelectorAll('[data-key]')) {
         const key = input.dataset.key;
@@ -440,6 +455,64 @@ function editBlocks(container, existing, markDirty) {
       return row;
     }));
   }
+
+  list.addEventListener('paste', event => {
+    const input = event.target.closest('textarea[data-key=text]');
+    if (!input || busy) return;
+    const index = Number(input.closest('.body-block').dataset.index);
+    if (blocks[index].type !== 'text') return;
+    const paragraphs = (event.clipboardData?.getData('text/plain') || '').replace(/\r\n?/g, '\n').split(/\n[^\S\n]*\n+/).map(part => part.trim()).filter(Boolean);
+    if (paragraphs.length < 2 || blocks.length + paragraphs.length - 1 > 100) return;
+    event.preventDefault();
+    blocks[index].text = input.value.slice(0, input.selectionStart) + paragraphs.shift();
+    const additions = paragraphs.map(text => ({ type: 'text', text }));
+    additions.at(-1).text += input.value.slice(input.selectionEnd);
+    blocks.splice(index + 1, 0, ...additions);
+    markDirty();
+    drawBlocks();
+    const last = list.children[index + additions.length].querySelector('textarea');
+    last.focus();
+    last.setSelectionRange(paragraphs.at(-1).length, paragraphs.at(-1).length);
+  });
+
+  function clearDropMarker() {
+    list.querySelector('[data-drop-side]')?.removeAttribute('data-drop-side');
+  }
+
+  list.addEventListener('dragstart', event => {
+    if (!event.target.matches('.block-grip')) return;
+    if (busy) return event.preventDefault();
+    dragged = Number(event.target.closest('.body-block').dataset.index);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', '');
+  });
+  list.addEventListener('dragover', event => {
+    if (dragged === null || busy) return;
+    clearDropMarker();
+    const row = event.target.closest('.body-block');
+    if (!row) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const box = row.getBoundingClientRect();
+    row.dataset.dropSide = event.clientY < box.top + box.height / 2 ? 'before' : 'after';
+  });
+  list.addEventListener('dragleave', event => {
+    if (!list.contains(event.relatedTarget)) clearDropMarker();
+  });
+  list.addEventListener('drop', event => {
+    const row = event.target.closest('[data-drop-side]');
+    if (dragged === null || !row || busy) return;
+    event.preventDefault();
+    const insertion = Number(row.dataset.index) + (row.dataset.dropSide === 'after' ? 1 : 0);
+    const from = dragged;
+    dragged = null;
+    clearDropMarker();
+    move(from, insertion > from ? insertion - 1 : insertion);
+  });
+  list.addEventListener('dragend', () => {
+    dragged = null;
+    clearDropMarker();
+  });
 
   for (const [type, label] of Object.entries(blockTypes)) {
     const button = document.createElement('button');
@@ -514,12 +587,13 @@ function draw() {
   const imageField = `<div id="image"${article ? ' class="card-image-field"' : ''}><input type="hidden" name="image"></div>`;
   main.innerHTML = `
     <form id="editor" class="editor">
-      <div class="editor-header"><div><h1>${title}</h1><p>${description}</p></div><div class="editor-tools"><span id="editor-state" class="editor-state" hidden>未保存</span>${tab === 'products' && record ? '<button id="delete-product" class="secondary danger" type="button">删除商品</button>' : ''}</div></div>
+      <div class="editor-header"><div><h1>${title}</h1><p>${description}</p></div><div class="editor-tools"><span id="editor-state" class="editor-state" hidden>未保存</span>${record && !poster ? `<button id="delete-record" class="secondary danger" type="button">删除${names[tab]}</button>` : ''}</div></div>
       ${poster ? editorCard('海报与裁切', imageField + posterFields) : `
-        ${editorCard('基本信息', common(article) + (article ? articleFields : productMetadata))}
         ${article
-          ? editorCard('文章封面', imageField + '<label>图片描述<input name="imageAlt" maxlength="180" placeholder="简要描述图片，供读屏使用"></label><p class="hint">封面用于文章卡片。正文需要图片时，添加「图片」或「用卡片封面」块。放在第一块会作为正文首图。</p>') + editorCard('', '<div id="article-blocks"></div>')
-          : editorCard('商品图片', '<div id="product-images" class="fields"></div>') + editorCard('价格与规格', productPurchase) + editorCard('说明与交付', productDescription)}
+          ? editorCard('标题和导语', articleTitle) + editorCard('基本信息', articleInfo)
+            + editorCard('文章封面', imageField + '<label>图片描述<input name="imageAlt" maxlength="180" placeholder="简要描述图片，供读屏使用"></label><p class="hint">封面用于文章卡片。正文需要图片时，添加「图片」或「用卡片封面」模块。放在第一块会作为正文首图。</p>')
+            + editorCard('正文', '<div id="article-blocks"></div>') + editorCard('标签与相关商品', articleDetails)
+          : editorCard('基本信息', productInfo + productMetadata) + editorCard('商品图片', '<div id="product-images" class="fields"></div>') + editorCard('价格与规格', productPurchase) + editorCard('说明与交付', productDescription)}
         ${editorCard('搜索', keywords)}
       `}
     </form>`;
@@ -554,10 +628,8 @@ function draw() {
   if (!poster) {
     for (const option of form.elements.status.options) option.textContent = labels[tab][option.value];
     if (article) {
-      if (record) form.elements.slug.readOnly = true;
       blocks = editBlocks(get('#article-blocks'), record?.blocks, markDirty);
-      get('#timezone').textContent = `本机时区 ${Intl.DateTimeFormat().resolvedOptions().timeZone}。到点后可生成并发布。`;
-      inputOptions('#authors', state.data.articles.map(item => item.author));
+      get('#timezone').textContent = `发布时间按本机时区填写（${Intl.DateTimeFormat().resolvedOptions().timeZone}）。`;
       for (const product of state.data.products) {
         const label = document.createElement('label');
         label.className = 'check';
@@ -589,16 +661,6 @@ function draw() {
     form.elements.status.onchange = refreshStatus;
     if (!article) form.elements.priceMode.onchange = refreshStatus;
     refreshStatus();
-  }
-
-  function refreshSlug() {
-    const field = form.elements.slug;
-    const automatic = articleSlug(form.elements.title.value, form.elements.englishTitle.value, contentSlugs(state.data, 'articles'));
-    const output = get('#slug-preview');
-    const slug = field.value.trim() || automatic;
-    field.placeholder = automatic || '随标题自动生成';
-    output.hidden = !slug;
-    output.value = slug ? `guide-${slug}.html` : '';
   }
 
   function valuesFromForm() {
@@ -639,14 +701,8 @@ function draw() {
     }, 400);
   }
 
-  if (article) {
-    refreshSlug();
-    if (!record) schedulePreview();
-  }
-  form.oninput = () => {
-    if (article) refreshSlug();
-    markDirty();
-  };
+  if (article && !record) schedulePreview();
+  form.oninput = markDirty;
   form.onsubmit = async event => {
     event.preventDefault();
     if (busy) return;
@@ -670,15 +726,16 @@ function draw() {
       setBusy(false);
     }
   };
-  const remove = get('#delete-product');
+  const remove = get('#delete-record');
   if (remove) remove.onclick = async () => {
-    if (busy || !window.confirm(`删除「${record.title}」？商品及其文章关联会从本机内容移除，已有网址将显示已下架。${dirty ? '\n当前未保存的修改也会丢弃。' : ''}`)) return;
+    const message = article ? '文章会从本机内容移除，已有网址将显示已撤下。' : '商品及其文章关联会从本机内容移除，已有网址将显示已下架。';
+    if (busy || !window.confirm(`删除「${record.title}」？${message}${dirty ? '\n当前未保存的修改也会丢弃。' : ''}`)) return;
     setBusy(true);
     try {
-      state = await post('delete-product', { slug: record.slug });
+      state = await post(article ? 'delete-article' : 'delete-product', { slug: record.slug });
       selected = state.selected;
       draw();
-      flash('商品已从本机移除。生成网站后更新网页。');
+      flash(`${article ? '文章' : '商品'}已从本机移除。生成网站后更新网页。`);
     } catch (error) {
       flash(error.message, true);
     } finally {
@@ -691,7 +748,7 @@ function setBusy(active) {
   busy = active;
   generate.disabled = active || !state;
   save.disabled = active || !get('#editor');
-  document.querySelectorAll('[data-tab], #new, #delete-product').forEach(button => { button.disabled = active; });
+  document.querySelectorAll('[data-tab], #new, #delete-record').forEach(button => { button.disabled = active; });
   if (state) drawList();
 }
 
