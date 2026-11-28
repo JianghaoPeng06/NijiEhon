@@ -3,7 +3,7 @@ export const catalog = [
   {
     "slug": "0",
     "title": "美国 Ultra Mobile 电话卡",
-    "image": "assets/placeholders/product-ultra.jpg",
+    "image": "assets/content/1190b53af63e5498e1394631e11a460d030043ba2dea7879c88a55085db448b7.jpg",
     "status": "published",
     "sample": false,
     "options": [
@@ -24,7 +24,7 @@ export const catalog = [
   {
     "slug": "1",
     "title": "英国 giffgaff 电话卡",
-    "image": "assets/placeholders/product-giffgaff.jpg",
+    "image": "assets/content/f7cd4fe992e50d0bacb740c681494711403362e61e2ef49d2f11c6fbde255ba5.png",
     "status": "published",
     "sample": false,
     "options": [
@@ -51,7 +51,7 @@ export const catalog = [
   {
     "slug": "2",
     "title": "Apple 账号注册",
-    "image": "assets/placeholders/product-apple.jpg",
+    "image": "assets/content/b70fe08c186309aa56af9b50dcd307b0459b9211cbce107eddaf6ae14c93f520.png",
     "status": "published",
     "sample": false,
     "options": [

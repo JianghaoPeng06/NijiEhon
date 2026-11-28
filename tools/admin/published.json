@@ -9,16 +9,10 @@
       "slug": "0",
       "title": "美国 Ultra Mobile 电话卡",
       "summary": "需要一个美国号码用于日常联系或低频收发短信？实体 SIM 和 eSIM 两种规格均包含激活服务。",
-      "image": "assets/placeholders/product-ultra.jpg",
+      "image": "assets/content/1190b53af63e5498e1394631e11a460d030043ba2dea7879c88a55085db448b7.jpg",
       "imageAlt": "",
       "keywords": "Ultra Mobile SIM eSIM 美国 电话卡 手机卡 包激活 等补货",
       "status": "published",
-      "gallery": [
-        {
-          "image": "assets/content/f441236a6f78c0cc361886c04c384485a4da9388fe468bd8b38b09c6e8193530.jpg",
-          "alt": ""
-        }
-      ],
       "weight": 4,
       "region": "美国",
       "category": "通信",
@@ -50,7 +44,7 @@
       "slug": "1",
       "title": "英国 giffgaff 电话卡",
       "summary": "需要英国号码，可以选择自行激活的实体卡，或选含激活服务的实体卡和 eSIM。",
-      "image": "assets/placeholders/product-giffgaff.jpg",
+      "image": "assets/content/f7cd4fe992e50d0bacb740c681494711403362e61e2ef49d2f11c6fbde255ba5.png",
       "imageAlt": "",
       "keywords": "giffgaff SIM eSIM 英国 电话卡 手机卡 未激活 包激活",
       "status": "published",
@@ -88,10 +82,24 @@
       "slug": "2",
       "title": "Apple 账号注册",
       "summary": "想为特定地区的 App 或 Apple 服务准备账号？可选注册教学或代注册。",
-      "image": "assets/placeholders/product-apple.jpg",
+      "image": "assets/content/b70fe08c186309aa56af9b50dcd307b0459b9211cbce107eddaf6ae14c93f520.png",
       "imageAlt": "",
       "keywords": "苹果 Apple ID Apple 账户 Apple 账号 注册教学 代注册",
       "status": "published",
+      "gallery": [
+        {
+          "image": "assets/content/1b821099e2790bbe3be2f87dedb738b5ff76a32d753ffc6fc3f7f9988a72fda5.jpg",
+          "alt": ""
+        },
+        {
+          "image": "assets/content/d52769856c5b720f6ac80086e02011ae7202efcda6cd29508d4722814efa3769.jpg",
+          "alt": ""
+        },
+        {
+          "image": "assets/content/4ab96e50763f2aa2701370539bc10841ee2aa88b0f17e6cbf9b25e25027d236c.jpg",
+          "alt": ""
+        }
+      ],
       "weight": 2,
       "region": "多地区",
       "category": "账户",
