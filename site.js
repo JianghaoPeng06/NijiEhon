@@ -13,6 +13,95 @@ function markExternalLinks(root) {
 }
 markExternalLinks(document);
 
+const mobileOutline = document.querySelector(".article-outline-mobile");
+if (mobileOutline) {
+  const mobile = mobileOutline;
+  const articleLayout = mobile.closest(".article-layout");
+  const body = articleLayout.querySelector(".content-body");
+  const desktop = articleLayout.querySelector(".article-outline-desktop");
+  const toggle = mobile.querySelector(".article-outline-toggle");
+  const close = mobile.querySelector(".article-outline-close");
+  const menu = mobile.querySelector(".article-outline-sections");
+  const mobileTitle = toggle.querySelector("span");
+  const wide = window.matchMedia("(min-width: 60rem)");
+  const mobileLinks = [...menu.querySelectorAll("a")];
+  const sections = [...desktop.querySelectorAll("a")].map((link, index) => ({
+    target: document.getElementById(link.hash.slice(1)),
+    links: [link, mobileLinks[index]]
+  }));
+  let current;
+  let frame;
+
+  function revealLink(container, link) {
+    const bounds = container.getBoundingClientRect();
+    const item = link.getBoundingClientRect();
+    if (!bounds.height) return;
+    if (item.top < bounds.top) container.scrollTop -= bounds.top - item.top;
+    else if (item.bottom > bounds.bottom) container.scrollTop += item.bottom - bounds.bottom;
+  }
+
+  function showMenu(expanded, restoreFocus = false) {
+    if (expanded === !menu.hidden) return;
+    toggle.hidden = expanded;
+    toggle.setAttribute("aria-expanded", String(expanded));
+    close.hidden = menu.hidden = !expanded;
+    if (expanded) {
+      revealLink(menu, current.links[1]);
+      close.focus({ preventScroll: true });
+    } else if (restoreFocus) {
+      toggle.focus({ preventScroll: true });
+    }
+  }
+
+  function updateOutline() {
+    frame = undefined;
+    const headerHeight = header.offsetHeight;
+    articleLayout.style.setProperty("--article-header-height", `${headerHeight}px`);
+    const bounds = body.getBoundingClientRect();
+    mobile.inert = wide.matches || bounds.top > headerHeight || bounds.bottom <= headerHeight;
+    desktop.hidden = bounds.bottom <= headerHeight;
+    if (mobile.inert) showMenu(false);
+    const cutoff = Number.parseFloat(getComputedStyle(sections[0].target).scrollMarginBlockStart) + 1;
+    const active = sections.findLast(section => section.target.getBoundingClientRect().top <= cutoff) || sections[0];
+    if (active === current) return;
+    current?.links.forEach(link => link.removeAttribute("aria-current"));
+    current = active;
+    current.links.forEach(link => link.setAttribute("aria-current", "location"));
+    mobileTitle.textContent = current.links[1].textContent;
+    revealLink(desktop, current.links[0]);
+  }
+
+  function scheduleOutline() {
+    frame ??= requestAnimationFrame(updateOutline);
+  }
+
+  toggle.addEventListener("click", () => showMenu(true));
+  close.addEventListener("click", () => showMenu(false, true));
+  mobile.addEventListener("click", event => {
+    const link = event.target.closest("a");
+    if (!link) return;
+    const sameSection = link.getAttribute("aria-current") === "location";
+    showMenu(false, sameSection);
+    if (sameSection) event.preventDefault();
+  });
+  mobile.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !menu.hidden) {
+      event.preventDefault();
+      showMenu(false, true);
+    }
+  });
+  window.addEventListener("scroll", () => {
+    showMenu(false);
+    scheduleOutline();
+  }, { passive: true });
+  window.addEventListener("resize", scheduleOutline);
+  window.addEventListener("hashchange", scheduleOutline);
+  const outlineObserver = new ResizeObserver(scheduleOutline);
+  outlineObserver.observe(header);
+  outlineObserver.observe(articleLayout.closest("article"));
+  updateOutline();
+}
+
 for (const frame of document.querySelectorAll('[data-article-html]')) {
   let observer;
   const resize = () => {
@@ -30,23 +119,71 @@ for (const frame of document.querySelectorAll('[data-article-html]')) {
   resize();
 }
 
-const menus = [...header.querySelectorAll("nav details")];
+const navigation = header.querySelector("#site-navigation");
+const menus = [...navigation.querySelectorAll("details")];
+const navToggle = header.querySelector(".nav-toggle");
+const navBack = navigation.querySelector(".nav-back");
+const desktopNavigation = window.matchMedia("(min-width: 56rem)");
+const pageRegions = document.querySelectorAll("main, footer");
 let activeMenu = null;
 let hoverTimer;
 
 function sizePanel() {
-  const height = activeMenu?.querySelector("div").offsetHeight || 0;
+  const height = desktopNavigation.matches ? activeMenu?.querySelector("div").offsetHeight || 0 : 0;
   header.style.setProperty("--menu-height", height + "px");
 }
 
 function selectMenu(next) {
   clearTimeout(hoverTimer);
-  if (activeMenu === next) return;
-  if (activeMenu) activeMenu.open = false;
+  if (activeMenu !== next && activeMenu) activeMenu.open = false;
   activeMenu = next;
   if (next) next.open = true;
+  header.toggleAttribute("data-menu-open", desktopNavigation.matches && !!next);
+  navigation.toggleAttribute("data-submenu", !desktopNavigation.matches && !!next);
+  if (next) navigation.removeAttribute("data-returning");
+  navBack.hidden = desktopNavigation.matches || !next;
+  if (next) navigation.scrollTop = 0;
   sizePanel();
 }
+
+function showNavigation(open) {
+  const mobile = !desktopNavigation.matches;
+  const visible = mobile && open;
+  header.toggleAttribute("data-drawer-open", visible);
+  navToggle.setAttribute("aria-expanded", String(visible));
+  navToggle.setAttribute("aria-label", visible ? "关闭导航" : "打开导航");
+  navigation.inert = mobile && !visible;
+  for (const region of pageRegions) region.inert = visible;
+  if (visible) {
+    navigation.setAttribute("role", "dialog");
+    navigation.setAttribute("aria-modal", "true");
+    navigation.scrollTop = 0;
+  } else {
+    navigation.removeAttribute("role");
+    navigation.removeAttribute("aria-modal");
+    navigation.removeAttribute("data-returning");
+    selectMenu(null);
+  }
+}
+
+navToggle.addEventListener("click", event => {
+  const open = !header.hasAttribute("data-drawer-open");
+  showNavigation(open);
+  if (open && event.detail === 0) {
+    requestAnimationFrame(() => {
+      if (header.hasAttribute("data-drawer-open")) menus[0]?.querySelector("summary").focus({ preventScroll: true });
+    });
+  }
+});
+navBack.addEventListener("click", () => {
+  const trigger = activeMenu?.querySelector("summary");
+  selectMenu(null);
+  navigation.setAttribute("data-returning", "");
+  navigation.scrollTop = 0;
+  trigger?.focus({ preventScroll: true });
+});
+desktopNavigation.addEventListener("change", () => showNavigation(false));
+showNavigation(false);
 
 for (const menu of menus) {
   const summary = menu.querySelector("summary");
@@ -55,36 +192,52 @@ for (const menu of menus) {
     selectMenu(menu.open ? null : menu);
   });
   menu.parentElement.addEventListener("pointerenter", event => {
-    if (event.pointerType !== "mouse") return;
+    if (!desktopNavigation.matches || event.pointerType !== "mouse") return;
     clearTimeout(hoverTimer);
-    hoverTimer = setTimeout(() => selectMenu(menu), 90);
+    if (activeMenu) selectMenu(menu);
+    else hoverTimer = setTimeout(() => selectMenu(menu), 150);
   });
   menu.parentElement.addEventListener("pointerleave", () => clearTimeout(hoverTimer));
 }
 
 header.addEventListener("pointerleave", event => {
-  if (event.pointerType === "mouse" && !activeMenu?.contains(document.activeElement)) {
-    hoverTimer = setTimeout(() => selectMenu(null), 180);
+  if (desktopNavigation.matches && event.pointerType === "mouse" && !activeMenu?.contains(document.activeElement)) {
+    hoverTimer = setTimeout(() => selectMenu(null), 150);
   }
 });
 header.addEventListener("pointerenter", () => clearTimeout(hoverTimer));
 document.addEventListener("click", event => {
   if (event.target.closest("[data-open-contact]")) return;
-  if (!event.target.closest("header nav") || event.target.closest("header nav a")) selectMenu(null);
+  if (header.hasAttribute("data-drawer-open")) {
+    if (!event.target.closest("header") || event.target.closest("header a")) showNavigation(false);
+  } else if (!event.target.closest("header nav") || event.target.closest("header nav a")) {
+    selectMenu(null);
+  }
 });
 document.addEventListener("focusin", event => {
-  if (activeMenu && !activeMenu.parentElement.contains(event.target)) selectMenu(null);
+  if (desktopNavigation.matches && activeMenu && !activeMenu.parentElement.contains(event.target)) selectMenu(null);
 });
 document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && header.hasAttribute("data-drawer-open")) {
+    event.preventDefault();
+    if (activeMenu) navBack.click();
+    else {
+      showNavigation(false);
+      navToggle.focus();
+    }
+    return;
+  }
   if (event.key === "Escape" && activeMenu) {
     activeMenu.querySelector("summary").focus();
     selectMenu(null);
   }
 });
 window.addEventListener("resize", sizePanel);
-window.addEventListener("pageshow", () => selectMenu(null));
+window.addEventListener("pageshow", () => showNavigation(false));
 header.querySelectorAll(".nav-link").forEach(link => {
-  link.addEventListener("pointerenter", () => selectMenu(null));
+  link.addEventListener("pointerenter", () => {
+    if (desktopNavigation.matches) selectMenu(null);
+  });
 });
 const pageName = location.pathname.split("/").pop() || "index.html";
 header.querySelectorAll("nav a").forEach(link => {
@@ -99,8 +252,9 @@ document.querySelectorAll(".footer-links a").forEach(link => {
 if (pageName === "donate.html") header.querySelector("#contact-menu summary").setAttribute("aria-current", "location");
 function openContact() {
   const menu = header.querySelector("#contact-menu");
-  menu.querySelector("summary").focus();
+  if (!desktopNavigation.matches) showNavigation(true);
   selectMenu(menu);
+  menu.querySelector("summary").focus();
 }
 document.querySelectorAll("[data-open-contact]").forEach(link => {
   link.addEventListener("click", event => {
@@ -168,9 +322,11 @@ if ("IntersectionObserver" in window) {
 const searchTrigger = header.querySelector(".search");
 const searchItems = [
   // BEGIN ADMIN: search
-  ["guide-0.html","第一次选择海外号码","指南","电话卡 SIM 美国 英国 NijiEhon 海外号码 SIM 卡 运营商"],
-  ["guide-1.html","收到 SIM 卡后如何开始","指南","电话卡 激活 NijiEhon SIM 卡 开卡激活"],
-  ["guide-2.html","开通云服务器前的准备","指南","服务器 VPS NijiEhon 云服务器 SSH 计费"],
+  ["guide-gemini-4-neon.html","Google Gemini 4 Neon 发布，世界前沿 AI 实力大洗牌","指南","Google Gemini 4 Neon Artificial Analysis AI 排行 榜单 Intelligence Index GPT-6.2 Astra Claude Fable 5.2 Gemini 4 Neon 在 Artificial Analysis 最新榜单上追平 GPT-6.2 Astra 的 62 分。Claude Fable 5.2 仍以 65 分领先，但做完一道题的成本差距更大。 Codex by OpenAI 人工智能 Gemini 模型评测"],
+  ["guide-0.html","为什么需要一个海外号码","指南","+86 海外手机号 美国号码 英国号码 国际短信 验证码 SIM eSIM giffgaff Ultra Mobile 当一个表单只认当地号码，或者一条验证码迟迟不到，一张提前准备好的第二张卡，可以让你少错过一次机会。 Codex by OpenAI 海外号码 SIM 卡 国际生活"],
+  ["guide-1.html","收到SIM卡后如何开始","指南","收到 SIM 卡 激活 开卡 安装 eSIM 二维码 giffgaff Ultra Mobile 短信 漫游 保号 从辨认规格、安装到收发测试，按顺序把新号码准备好。适用于本站的英国 giffgaff 和美国 Ultra Mobile 电话卡。 Codex by OpenAI SIM 卡 开卡激活 使用指南"],
+  ["guide-why-email-matters-more-than-a-phone-number.html","为什么邮箱比手机号重要","指南","电子邮件 手机号 国际邮箱 Gmail 登录 找回账户 保号 Wi-Fi Calling 两步验证 换手机、换运营商、换一个国家生活，常用邮箱都可以继续用。把它当成长期的账户入口，再让手机号负责当地联系。 Codex by OpenAI 电子邮箱 账号安全 国际生活"],
+  ["guide-ai-that-reaches-out-first.html","能主动找你的AI，不需要你先下达指令","指南","主动 AI 个人智能体 Grokbot Grok Bot Meta Muse OpenAI Dots Dot Claude Duet Anthropic 小豆 DouOS 从定时汇报到主动跟进，了解 Grok Bot、Muse、ChatGPT 的 dot、Claude Duet 和小豆分别擅长什么。 Codex by OpenAI 人工智能 个人智能体 主动式 AI"],
   ["product-0.html","美国 Ultra Mobile 电话卡","产品","Ultra Mobile SIM eSIM 美国 电话卡 手机卡 包激活 等补货 需要一个美国号码用于日常联系或低频收发短信？实体 SIM 和 eSIM 两种规格均包含激活服务。 通信 美国"],
   ["product-1.html","英国 giffgaff 电话卡","产品","giffgaff SIM eSIM 英国 电话卡 手机卡 未激活 包激活 需要英国号码，可以选择自行激活的实体卡，或选含激活服务的实体卡和 eSIM。 通信 英国"],
   ["product-2.html","Apple 账号注册","产品","苹果 Apple ID Apple 账户 Apple 账号 注册教学 代注册 想为特定地区的 App 或 Apple 服务准备账号？可选注册教学或代注册。 账户 多地区"],
@@ -232,8 +388,8 @@ function renderSearch() {
 
 function openSearch() {
   if (document.querySelector("dialog[open]")) return;
-  selectMenu(null);
-  searchReturnFocus = document.activeElement;
+  searchReturnFocus = navigation.contains(document.activeElement) ? searchTrigger : document.activeElement;
+  showNavigation(false);
   searchInput.value = "";
   renderSearch();
   searchDialog.showModal();

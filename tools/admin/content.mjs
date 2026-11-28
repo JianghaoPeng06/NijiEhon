@@ -150,7 +150,7 @@ export function route(collection, id) {
 }
 
 export function compareArticles(a, b) {
-  return Number(b.pinned) - Number(a.pinned) || b.date.localeCompare(a.date);
+  return b.date.localeCompare(a.date);
 }
 
 function recommendedProducts(products) {
@@ -179,12 +179,12 @@ function articleMeta(item) {
   const parts = item.date ? formatter.formatToParts(new Date(item.date)) : [];
   const date = Object.fromEntries(parts.map(part => [part.type, part.value]));
   const iso = parts.length ? `${date.year}-${date.month.padStart(2, '0')}-${date.day.padStart(2, '0')}` : '';
-  const display = parts.length ? `<time datetime="${iso}">${date.year} 年 ${date.month} 月 ${date.day} 日</time> · ` : '';
+  const display = parts.length ? `<time datetime="${iso}">${date.year} 年 ${date.month} 月 ${date.day} 日</time> ` : '';
   const text = item.blocks.map(block => block.type === 'html' ? block.text.replace(/<[^>]*>/g, ' ') : block.text || block.caption || '').join(' ');
   const han = text.match(/\p{Script=Han}/gu) || [];
   const words = text.replace(/\p{Script=Han}/gu, ' ').match(/[\p{L}\p{N}]+/gu) || [];
   const minutes = item.read ?? Math.max(1, Math.ceil(han.length / 350 + words.length / 220));
-  return `<span class="article-meta">${display}约 ${minutes} 分钟阅读</span>`;
+  return `<span class="article-meta">${display}<span class="article-duration">${display ? '· ' : ''}约 ${minutes} 分钟阅读</span></span>`;
 }
 
 function imageTag(item, css) {
@@ -238,18 +238,23 @@ ${saved ? favoriteButton('products', item, true) : ''}
 </div>`;
 }
 
-function articleCard(item, featured = false, saved = false) {
-  const size = featured ? 'cover' : 'mini';
-  return `<a${featured ? ' class="tile"' : ''} href="${route('articles', item.slug)}">
-<span class="card-visual">${imageTag(item, size) || `<span class="${size} content-placeholder" aria-hidden="true"></span>`}${saved ? '' : favoriteMarker('articles', item)}</span>
+function articleCard(item, large = false, saved = false) {
+  const size = large ? 'cover' : 'mini';
+  const pin = item.pinned ? '<span class="article-pin">置顶</span>' : '';
+  return `<a${large ? ' class="tile"' : ''} href="${route('articles', item.slug)}">
+<span class="card-visual">${imageTag(item, size) || `<span class="${size} content-placeholder" aria-hidden="true"></span>`}${pin}${saved ? '' : favoriteMarker('articles', item)}</span>
 <div><span class="article-title">${escape(item.title)}</span>${articleMeta(item)}</div>
 </a>`;
 }
 
-function bodyBlock(block, item, headingTag = 'h2', hero = false) {
+function bodyBlock(block, item, { headingTag = 'h2', hero = false, sectionId = '' } = {}) {
   switch (block.type) {
-    case 'heading': return `<${headingTag}>${escape(block.text)}</${headingTag}>`;
-    case 'subheading': return `<h3>${escape(block.text)}</h3>`;
+    case 'heading':
+    case 'subheading': {
+      const tag = block.type === 'heading' ? headingTag : 'h3';
+      const anchor = sectionId ? ` id="${sectionId}" tabindex="-1"` : '';
+      return `<${tag}${anchor}>${escape(block.text)}</${tag}>`;
+    }
     case 'list':
     case 'ordered': {
       const tag = block.type === 'ordered' ? 'ol' : 'ul';
@@ -347,11 +352,14 @@ function productDetails(item, products) {
 ${photo || ''}
 <div class="product-information">
 ${info ? `<p class="product-kicker">${info}</p>` : ''}
-<div class="product-title"><h1>${escape(item.title)}</h1>${item.preview ? '' : favoriteButton('products', item)}</div>
+<h1>${escape(item.title)}</h1>
+<div class="product-offer">
 <p class="product-price">${item.sample ? '<span>样例价格</span> ' : ''}${displayPrice(item)}</p>
+${item.preview ? '' : favoriteButton('products', item)}
+</div>
 ${item.summary ? `<p class="product-intro">${escape(item.summary)}</p>` : ''}
 ${purchaseForm(item)}
-${item.body ? `<section class="product-description"><h2>商品说明</h2><div class="content-body">${legacyBlocks(item.body).map(block => bodyBlock(block, item, 'h3')).join('\n')}</div></section>` : ''}
+${item.body ? `<section class="product-description"><h2>商品说明</h2><div class="content-body">${legacyBlocks(item.body).map(block => bodyBlock(block, item, { headingTag: 'h3' })).join('\n')}</div></section>` : ''}
 ${item.delivery ? `<p class="product-delivery"><strong>交付方式</strong> ${escape(item.delivery)}</p>` : ''}
 ${item.notice ? `<p class="product-notice"><strong>购买须知</strong> ${escape(item.notice).replace(/\r?\n/g, '<br>')}</p>` : ''}
 ${official ? `<div class="content-actions">${official}</div>` : ''}
@@ -361,11 +369,41 @@ ${recommendations(products.filter(product => product.slug !== item.slug))}`;
 }
 
 function articleDetails(item, products) {
-  const tags = item.tags.length ? `<ul class="article-tags" aria-label="标签">${item.tags.map(tag => `<li>${escape(tag)}</li>`).join('')}</ul>` : '';
+  const year = item.date ? formatter.formatToParts(new Date(item.date)).find(part => part.type === 'year')?.value : '';
+  const labels = [
+    year ? `<li><time datetime="${year}">${year}</time></li>` : '',
+    ...item.tags.filter(tag => tag !== year).map(tag => `<li>${escape(tag)}</li>`)
+  ].join('');
   const related = item.related.map(id => products.find(product => product.slug === id)).filter(Boolean);
   const links = related.length ? `<nav class="content-actions" aria-label="相关产品">${related.map(product => `<a class="pill" href="${route('products', product.slug)}">${escape(product.title)}</a>`).join('')}</nav>` : '';
   const first = item.blocks[0];
-  const hero = ['image', 'cover'].includes(first?.type) ? bodyBlock(first, item, 'h2', true) : '';
+  const hero = ['image', 'cover'].includes(first?.type) ? bodyBlock(first, item, { hero: true }) : '';
+  const sections = [];
+  let sectionNumber = 0;
+  let parentSection;
+  const body = item.blocks.slice(hero ? 1 : 0).map(block => {
+    if (block.type !== 'heading' && block.type !== 'subheading') return bodyBlock(block, item);
+    const sectionId = `article-section-${++sectionNumber}`;
+    const section = { id: sectionId, text: escape(block.text), children: [] };
+    if (block.type === 'subheading' && parentSection) parentSection.children.push(section);
+    else sections.push(section);
+    if (block.type === 'heading') parentSection = section;
+    return bodyBlock(block, item, { sectionId });
+  }).join('\n');
+  const sectionLink = section => `<a href="#${section.id}">${section.text}</a>`;
+  const outlineList = sectionNumber > 1 ? `<ul>
+${sections.map(section => `<li>${sectionLink(section)}${section.children.length ? `<ul>${section.children.map(child => `<li>${sectionLink(child)}</li>`).join('')}</ul>` : ''}</li>`).join('\n')}
+</ul>` : '';
+  const outline = outlineList ? `<nav class="article-outline article-outline-desktop" aria-label="本文目录">
+${outlineList}
+</nav>
+<nav class="article-outline article-outline-mobile" aria-label="本文目录" inert>
+<div class="article-outline-panel">
+<button class="article-outline-toggle" type="button" aria-expanded="false" aria-controls="article-outline-sections"><span>${sections[0].text}</span></button>
+<button class="article-outline-close" type="button" aria-label="收起目录" hidden></button>
+<div class="article-outline-sections" id="article-outline-sections" hidden>${outlineList}</div>
+</div>
+</nav>` : '';
   return `<article class="research-article">
 <div class="article-toolbar"><a href="research.html">探索研究</a>${item.preview ? '' : favoriteButton('articles', item)}</div>
 <div class="article-header">
@@ -374,12 +412,20 @@ ${articleMeta(item)}
 ${item.summary ? `<p class="article-intro">${escape(item.summary)}</p>` : ''}
 </div>
 ${hero}
+<div${outline ? ' class="article-layout"' : ''}>
+${outline}
 <div class="article-reading">
-<div class="content-body">${item.blocks.slice(hero ? 1 : 0).map(block => bodyBlock(block, item)).join('\n')}</div>
+<div class="content-body">${body}</div>
 ${links}
+</div>
+</div>
 <div class="article-end">
-<p class="article-author"><span>作者</span> ${escape(item.author)}</p>
-${tags}
+<div class="article-end-inner">
+${labels ? `<ul class="article-tags" aria-label="发布年份与标签">${labels}</ul>` : ''}
+<div class="article-author">
+<h2>作者</h2>
+<p>${escape(item.author)}</p>
+</div>
 </div>
 </div>
 </article>`;
@@ -515,7 +561,11 @@ export function render(data, read) {
     slug: item.slug, title: item.title, image: item.image, status: item.status, sample: item.sample, options: purchaseOptions(item)
   }));
   pages.set('catalog.js', `// Generated by tools/admin/content.mjs.\nexport const catalog = ${JSON.stringify(catalog, null, 2)};\n`);
-  pages.set('research.html', slot(researchShell, 'research', `${grid(articles.slice(0, 3), item => articleCard(item, true), 'grid')}\n<section>\n<h2>全部文章</h2>\n${grid(articles, articleCard, 'article-list', '<p>暂无已发布文章。</p>')}\n</section>`));
+  const researchCards = [
+    grid(articles.slice(0, 3), item => articleCard(item, true), 'grid', '<p>暂无已发布文章。</p>'),
+    grid(articles.slice(3), articleCard, 'article-list')
+  ].filter(Boolean).join('\n');
+  pages.set('research.html', slot(researchShell, 'research', researchCards));
   for (const collection of collections) {
     for (const item of data[collection]) pages.set(route(collection, item.slug), detail(collection === 'products' ? productsShell : researchShell, collection, item, products));
   }

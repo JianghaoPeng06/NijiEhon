@@ -93,7 +93,7 @@ async function connect(id) {
   };
   await send('Fetch.enable', { patterns: [ { urlPattern: '*auth-config.js' }, { urlPattern: 'https://fixture.supabase.co/*' } ] });
   const run = async expression => { const value = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }); if (value.exceptionDetails) throw Error(JSON.stringify(value.exceptionDetails)); return value.result.value; };
-  const until = async expression => { for (let i=0; i<80; i++) { if (await run(expression)) return; await sleep(100); } throw Error('Timed out: '+expression+'; status='+await run('document.querySelector("[data-auth-status]").textContent')); };
+  const until = async expression => { for (let i=0; i<80; i++) { if (await run(expression)) return; await sleep(100); } throw Error('Timed out: '+expression+'; status='+await run('document.querySelector("[data-auth-status]")?.textContent')); };
   const navigate = async page => {
     const url = origin + '/' + page;
     const { loaderId, errorText } = await send('Page.navigate', { url });
@@ -107,7 +107,7 @@ async function connect(id) {
       assert.equal(loaded, loaderId, 'navigation committed for ' + page);
     }
     await until(`location.href === ${JSON.stringify(url)} && document.readyState === "complete"
-      && !!document.querySelector("[data-auth-status]") && !document.querySelector("[data-auth-status]").textContent.includes("正在确认")`);
+      && !document.querySelector("[data-auth-status]")?.textContent.includes("正在确认")`);
     await run('document.fonts.ready.then(() => true)');
   };
   return { send, run, until, navigate };
@@ -137,8 +137,9 @@ async function connect(id) {
     const email = document.querySelector("#login-email");
     const submit = document.querySelector("#email-submit");
     const controls = [email, submit].map(node => node.getBoundingClientRect());
-    return controls.every(box => Math.abs(box.height - 48) < .1 && Math.abs(box.width - controls[0].width) < .1)
-      && [email, submit].every(node => parseFloat(getComputedStyle(node).borderTopLeftRadius) >= 24);
+    return controls[0].height >= 46 && controls[0].height <= 50
+      && controls.every(box => Math.abs(box.height - controls[0].height) < .1 && Math.abs(box.width - controls[0].width) < .1)
+      && [email, submit].every(node => parseFloat(getComputedStyle(node).borderTopLeftRadius) >= controls[0].height / 2);
   })()`;
   const alignedLoginOptions = `(() => {
     const submit = document.querySelector("#email-submit").getBoundingClientRect();
@@ -153,16 +154,50 @@ async function connect(id) {
   assert(await main.run(equalLoginControls), 'desktop form controls share pill dimensions');
   assert(await main.run(alignedLoginOptions), 'desktop login options fill the same width');
   assert(await main.run(`(() => {
-    const controls = [...document.querySelectorAll("header nav .nav-group > :is(.nav-link,details)")]
-      .map(node => node.querySelector("summary") || node);
+    const controls = [...document.querySelectorAll("header nav .nav-group summary")];
     const boxes = controls.map(node => node.getBoundingClientRect());
-    const search = controls.at(-1);
-    return controls.length === 5 && search.classList.contains("search") && search.querySelector(".search-symbol")
+    const search = document.querySelector("header .search");
+    const searchBox = search.getBoundingClientRect();
+    const header = search.closest("header").getBoundingClientRect();
+    const brand = document.querySelector(".brand").getBoundingClientRect();
+    const hero = document.querySelector(".hero").getBoundingClientRect();
+    return controls.map(node => node.textContent).join(",") === "研究,产品,关于,联系"
+      && searchBox.width === 44 && searchBox.height === 44
+      && Math.abs(searchBox.top - header.top - (header.height - searchBox.height) / 2) < 1
+      && search.querySelector(".search-symbol")
       && search.getAttribute("aria-label") === "搜索" && !search.textContent.trim()
-      && boxes.every(box => box.height === 44 && box.y === boxes[0].y)
-      && controls.every(node =>
-        getComputedStyle(node).borderRadius === "0px" && getComputedStyle(node).backgroundColor === "rgba(0, 0, 0, 0)");
+      && boxes.every(box => box.height === header.height && box.y === header.y)
+      && Math.abs(brand.left - hero.left) < 1;
   })()`), 'search aligns with the four main navigation items');
+  const searchCentered = `(() => {
+    const dialog = document.querySelector("#site-search");
+    const box = dialog.getBoundingClientRect();
+    return Math.abs(box.left + box.right - document.body.clientWidth) < 1
+      && box.bottom <= innerHeight && document.activeElement === dialog.querySelector("input");
+  })()`;
+  await main.run(`document.querySelector("header .search").focus(); document.activeElement.click();`);
+  await main.until('document.querySelector("#site-search").open && !document.querySelector("#site-search").getAnimations().length');
+  assert(await main.run(searchCentered), 'desktop search centers in the available viewport');
+  await main.send('Emulation.setDeviceMetricsOverride', { width: 640, height: 400, deviceScaleFactor: 1, mobile: false });
+  await main.until(searchCentered);
+  assert(await main.run(`(() => {
+    const dialog = document.querySelector("#site-search");
+    const results = dialog.querySelector(".search-results");
+    return dialog.scrollHeight <= dialog.clientHeight + 1 && results.scrollHeight > results.clientHeight;
+  })()`), 'short windows scroll search results inside the dialog');
+  await main.send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 860, deviceScaleFactor: 1, mobile: false });
+  await main.until(searchCentered);
+  await main.run(`(() => {
+    const input = document.querySelector("#site-search-query");
+    input.value = "giffgaff 未激活";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  })()`);
+  await main.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40 });
+  await main.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40 });
+  assert(await main.run('document.activeElement.matches(".search-results a") && document.activeElement.getAttribute("href") === "product-1.html"'));
+  await main.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+  await main.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+  await main.until('!document.querySelector("#site-search").open && document.activeElement.matches("header .search")');
   assert(await main.run(`(() => {
     const poster = document.querySelector(".banner").getBoundingClientRect();
     const articles = [...document.querySelectorAll(".article-list > a")];
@@ -174,16 +209,17 @@ async function connect(id) {
       });
   })()`), 'poster ratio, square article thumbnails and dates are present');
   assert(await main.run(`(() => {
-    const primary = getComputedStyle(document.querySelector(".hero-actions .dark"));
-    const login = getComputedStyle(document.querySelector("header .login"));
-    return login.color === "rgb(255, 255, 255)" && login.backgroundColor === primary.backgroundColor
-      && login.borderRadius === primary.borderRadius
+    const button = document.querySelector("header .login");
+    const login = getComputedStyle(button);
+    const { width, height } = button.getBoundingClientRect();
+    return login.color === "rgb(255, 255, 255)" && login.backgroundColor === "rgb(32, 32, 35)"
+      && width >= 84 && height === 36 && getComputedStyle(button, "::after").height === "44px"
       && getComputedStyle(document.querySelector(".login-privacy")).textAlign === "center";
-  })()`), 'header login uses the primary style and the privacy notice is centered');
+  })()`), 'the low, wide dark login pill retains a 44px hit area');
   const researchPage = await (await fetch(origin + '/research.html')).text();
-  const featured = researchPage.match(/<div class="grid">([\s\S]*?)<\/div>\s*<section>/)?.[1];
+  const featured = researchPage.match(/<div class="grid">([\s\S]*?)<\/div>\s*(?:<div class="article-list">|<!-- END ADMIN: research -->)/)?.[1];
   assert.equal(featured?.match(/class="article-meta"/g)?.length, 3, 'all featured research cards show dates and reading times');
-  assert(await main.run('getComputedStyle(document.querySelector("header")).animationName === "header-in"'));
+  assert(await main.run('getComputedStyle(document.querySelector("header"), "::after").transitionDuration === "0.22s"'));
   const productCards = '[...document.querySelectorAll(".grid > .tile")]';
   const revealIsPlaying = 'card => card.getAnimations().some(animation => animation.animationName === "reveal-in")';
   assert(await main.run(`!${productCards}.some(${revealIsPlaying})`));
@@ -211,7 +247,7 @@ async function connect(id) {
     const header = document.querySelector("header");
     const panel = document.querySelector("#contact-menu > div").getBoundingClientRect();
     const background = getComputedStyle(document.body, "::before");
-    return background.backdropFilter === "blur(7px)" && background.pointerEvents === "auto"
+    return background.backdropFilter === "blur(10px)" && background.pointerEvents === "auto"
       && header.clientWidth === document.body.clientWidth && panel.width === header.clientWidth;
   })()`), 'desktop menu spans the viewport above the blurred page');
   const submenuRest = await main.run(linkColor(submenuLink));
@@ -237,6 +273,24 @@ async function connect(id) {
   await main.until(`document.activeElement.matches('.footer-links a[href="privacy.html"]:focus-visible')
     && getComputedStyle(document.activeElement).outlineStyle === "solid"`);
   await main.run('document.activeElement.blur(); window.scrollTo(0, 0)');
+  await main.send('Emulation.setDeviceMetricsOverride', { width: 895, height: 740, deviceScaleFactor: 1, mobile: false });
+  await main.until('document.querySelector("#site-navigation").inert && getComputedStyle(document.querySelector(".nav-toggle")).display !== "none"');
+  await main.run('document.querySelector(".nav-toggle").focus()');
+  await main.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' });
+  await main.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  await main.until('document.activeElement.matches("#research-menu summary") && document.querySelector("main").inert').catch(async error => {
+    const state = await main.run(`JSON.stringify({
+      focus: document.activeElement.outerHTML.slice(0, 150),
+      expanded: document.querySelector(".nav-toggle").getAttribute("aria-expanded"),
+      visible: getComputedStyle(document.querySelector("#site-navigation")).visibility
+    })`);
+    throw new Error(error.message + '; ' + state);
+  });
+  await main.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+  await main.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
+  await main.until('document.activeElement.matches(".nav-toggle") && !document.querySelector("main").inert');
+  await main.send('Emulation.setDeviceMetricsOverride', { width: 896, height: 740, deviceScaleFactor: 1, mobile: false });
+  await main.until('getComputedStyle(document.querySelector(".nav-toggle")).display === "none" && !document.querySelector("#site-navigation").inert');
   await main.send('Emulation.setDeviceMetricsOverride', { width: 320, height: 740, deviceScaleFactor: 1, mobile: true });
   await main.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
   await main.navigate('index.html?mobile');
@@ -249,15 +303,20 @@ async function connect(id) {
     await main.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [await point(main, selector)] });
     await main.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   };
+  assert(await main.run('document.querySelector("header").getBoundingClientRect().height === 52 && document.querySelector("#site-navigation").inert'));
+  await tap('.nav-toggle');
+  await main.until('getComputedStyle(document.querySelector("#site-navigation")).clipPath === "inset(0px)"');
+  assert(await main.run('document.querySelector("main").inert && !document.querySelector("#site-navigation").inert'));
   await tap('#contact-menu summary');
   await main.until('document.querySelector("#contact-menu").open');
-  await main.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 12, y: 650 }] });
-  await main.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  await main.until('!document.querySelector("#contact-menu").open');
+  await tap('.nav-back');
+  await main.until('!document.querySelector("#contact-menu").open && document.querySelector("header").hasAttribute("data-drawer-open")');
   await tap('#contact-menu summary');
   await main.until('document.querySelector("#contact-menu").open');
   await tap('header .search');
-  await main.until('document.querySelector("#site-search").open && !document.querySelector("#contact-menu").open');
+  await main.until('document.querySelector("#site-search").open && !document.querySelector("header").hasAttribute("data-drawer-open")');
+  await main.until('!document.querySelector("#site-search").getAnimations().length');
+  assert(await main.run(searchCentered), 'search remains centered with focus on its input');
   assert(await main.run('document.querySelector(".search-close").getBoundingClientRect().width === 44 && document.documentElement.scrollWidth <= innerWidth'));
   await tap('.search-close');
   await main.until('!document.querySelector("#site-search").open');
@@ -338,7 +397,7 @@ async function connect(id) {
     const settings = document.querySelector("#account-settings").getBoundingClientRect();
     const header = document.querySelector("header").getBoundingClientRect();
     return title.right < settings.left && Math.abs((title.top + title.bottom) - (settings.top + settings.bottom)) < 1
-      && Math.min(title.top, settings.top) - header.bottom >= 32;
+      && Math.min(title.top, settings.top) - header.bottom >= 24;
   })()`;
   assert(await second.run(accountHeadingAligned), 'account title and settings align on desktop with space below the header');
   await second.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
@@ -435,6 +494,18 @@ async function connect(id) {
   expireUser = true;
   await main.navigate('account.html');
   assert(await main.run('document.querySelector("#name").textContent === "访客"'));
+  await main.send('Emulation.setDeviceMetricsOverride', { width: 1096, height: 773, deviceScaleFactor: 1, mobile: false });
+  await main.navigate('research.html');
+  assert(await main.run(`(() => {
+    const cards = [...document.querySelectorAll(".grid .cover, .article-list .mini")];
+    return cards.length > 3 && cards.every(card => card.clientWidth > 0 && Math.abs(card.clientWidth - card.clientHeight) < 1);
+  })()`), 'research covers and thumbnails stay square');
+  await main.navigate('product-1.html');
+  assert(await main.run(`(() => {
+    const price = document.querySelector(".product-price").getBoundingClientRect();
+    const button = document.querySelector(".product-offer .favorite-button").getBoundingClientRect();
+    return price.right < button.left && Math.abs(price.top + price.bottom - button.top - button.bottom) < 1;
+  })()`), 'product price and favorite action share a row');
   console.log('PASS: password sign-in without email; OTP fallback; password help, setup and visibility; nickname and avatar settings; signup, resend and recovery; session restoration and logout; responsive controls, hover navigation, touch and back to top. Mock API only.');
   await main.send('Browser.close');
 })().catch(error => { console.error(error); process.exitCode=1; }).finally(() => { sockets.forEach(socket=>socket.close()); browser.kill(); });

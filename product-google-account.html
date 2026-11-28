@@ -20,7 +20,8 @@
 <body>
 <header>
 <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">𒀭</span>NijiEhon</a>
-<nav aria-label="主导航">
+<nav id="site-navigation" aria-label="主导航">
+<button class="nav-back" type="button" aria-label="返回主导航" hidden></button>
 <div class="nav-group"><details id="research-menu"><summary>研究</summary><div>
 <a href="research.html">探索研究</a>
 <a href="favorite-articles.html">收藏夹</a>
@@ -41,10 +42,12 @@
 <a class="contact-link" href="mailto:pengjasper@icloud.com" aria-label="邮箱（打开邮件应用）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg><span>邮箱</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
 <a href="donate.html">捐赠</a>
 </div></details></div>
-<div class="nav-group"><button class="nav-link search" type="button" aria-label="搜索" aria-haspopup="dialog" aria-controls="site-search" aria-expanded="false"><span class="search-symbol" aria-hidden="true"></span></button></div>
+<a class="nav-login" href="index.html#login">登录</a>
 </nav>
+<button class="nav-link search" type="button" aria-label="搜索" aria-haspopup="dialog" aria-controls="site-search" aria-expanded="false"><span class="search-symbol" aria-hidden="true"></span></button>
 <a class="login" href="index.html#login">登录</a>
 <a class="avatar" href="account.html" aria-label="个人中心（未登录）"><img data-user-avatar src="assets/default-avatar.png" width="32" height="32" alt=""></a>
+<button class="nav-toggle" type="button" aria-label="打开导航" aria-controls="site-navigation" aria-expanded="false"><span aria-hidden="true"></span></button>
 </header>
 <main>
 <article class="product-detail">
@@ -54,10 +57,13 @@
 </section>
 <div class="product-information">
 <p class="product-kicker">多地区 · 账户</p>
-<div class="product-title"><h1>Google 账号注册</h1><button class="favorite-button" type="button" data-favorite="product-google-account.html" aria-label="收藏商品：Google 账号注册" title="收藏商品：Google 账号注册" aria-pressed="false" hidden>
-<span data-favorite-text>收藏</span><span data-favorite-icon hidden><svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1Z"/></svg></span>
-</button></div>
+<h1>Google 账号注册</h1>
+<div class="product-offer">
 <p class="product-price">USD 3.00 起</p>
+<button class="favorite-button" type="button" data-favorite="product-google-account.html" aria-label="收藏商品：Google 账号注册" title="收藏商品：Google 账号注册" aria-pressed="false" hidden>
+<span data-favorite-text>收藏</span><span data-favorite-icon hidden><svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1Z"/></svg></span>
+</button>
+</div>
 <p class="product-intro">为日常邮件或 Google 服务准备账号，可按需选择注册教学或代注册。</p>
 <form class="purchase-form" method="post" data-purchase="google-account">
 

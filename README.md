@@ -2,7 +2,8 @@
 
 nijiehon.com 的国际数字生活网站，使用原生多页 HTML、CSS 和 JavaScript，无构建依赖。
 
-界面排版、控件、卡片和动效规则见 [UI 设计规范](DESIGN_README.md)。
+界面排版、响应式尺寸、控件、卡片和动效规则见 [UI 设计规范](DESIGN_README.md)。顶栏、主内容和页脚共用版心，窄屏按内容所需的宽度切换布局。
+卡片封面的置顶与收藏角标使用同一套尺寸和边距。每种尺寸的卡片中，两个角标等高、顶边对齐，左右留边相同。
 
 ## 生产环境交接
 
@@ -48,7 +49,7 @@ Windows 双击 [打开后台.cmd](tools/admin/打开后台.cmd) 或桌面上的 
 - 购物车保存在当前浏览器。登录后可在个人中心或实体商品结算区保存一份收货地址，地址按账号保存在当前浏览器。
 - terms.html、privacy.html、statement.html 分别为服务条款、隐私政策、声明的独立文章页。about.html 的旧锚点跳转到相应文章。
 - 顶栏和页脚联系区统一提供带图标及外链箭头的 X（https://x.com/JianghaoPeng）、Telegram（https://t.me/NijiEhon）、邮箱（mailto:pengjasper@icloud.com）；捐赠仍进入站内页面。contact.html 兼容旧链接，打开首页联系菜单。
-- 顶栏搜索在当前页打开悬浮窗口，支持即时筛选、方向键选择、Esc 关闭和 Ctrl/Cmd+K；search.html 兼容旧链接并转到首页搜索浮层。account.html 根据真实会话展示名称、邮箱、头像与退出按钮，访客显示登录提示。
+- 顶栏搜索在当前页打开横向居中的圆角浮层，支持即时筛选、方向键选择、Esc 关闭和 Ctrl/Cmd+K。search.html 兼容旧链接并转到首页搜索浮层。account.html 根据真实会话展示名称、邮箱、头像与退出按钮，访客显示登录提示。
 - donate.html 提供预设及自定义金额。实际收款和订单服务尚未接入；不会把占位订单当成真实业务数据。
 
 ## 维护

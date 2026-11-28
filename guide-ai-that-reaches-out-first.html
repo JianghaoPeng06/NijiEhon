@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>能主动找你的AI，不需要你先下达指令 · NijiEhon</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="preload" href="assets/fonts/google-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="style.css">
+<script defer src="auth-config.js"></script>
+<script defer src="assets/vendor/supabase-2.119.2.js"></script>
+<script defer src="auth.js"></script>
+<script defer src="favorites.js"></script>
+<script defer src="media.js"></script>
+<script defer src="site.js">
+</script>
+</head>
+<body>
+<header>
+<a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">𒀭</span>NijiEhon</a>
+<nav id="site-navigation" aria-label="主导航">
+<button class="nav-back" type="button" aria-label="返回主导航" hidden></button>
+<div class="nav-group"><details id="research-menu"><summary>研究</summary><div>
+<a href="research.html">探索研究</a>
+<a href="favorite-articles.html">收藏夹</a>
+</div></details></div>
+<div class="nav-group"><details id="products-menu"><summary>产品</summary><div>
+<a href="products.html">浏览产品</a>
+<a href="cart.html">购物车</a>
+<a href="favorite-products.html">商品收藏</a>
+</div></details></div>
+<div class="nav-group"><details><summary>关于</summary><div>
+<a href="terms.html">服务条款</a>
+<a href="privacy.html">隐私政策</a>
+<a href="statement.html">声明</a>
+</div></details></div>
+<div class="nav-group"><details id="contact-menu"><summary>联系</summary><div>
+<a class="contact-link" href="https://x.com/JianghaoPeng" target="_blank" rel="noopener noreferrer" aria-label="X（新窗口打开）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3h4l12 18h-4L4 3ZM20 3l-6.5 7.5M4 21l6.5-7.5"/></svg><span>X</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+<a class="contact-link" href="https://t.me/NijiEhon" target="_blank" rel="noopener noreferrer" aria-label="Telegram（新窗口打开）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m9.78 18.65.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19l-9.48 5.99-4.1-1.28c-.88-.25-.89-.86.2-1.3L19.81 4.6c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.06-1.99 1.93c-.23.23-.42.42-.83.36Z"/></svg><span>Telegram</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+<a class="contact-link" href="mailto:pengjasper@icloud.com" aria-label="邮箱（打开邮件应用）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg><span>邮箱</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+<a href="donate.html">捐赠</a>
+</div></details></div>
+<a class="nav-login" href="index.html#login">登录</a>
+</nav>
+<button class="nav-link search" type="button" aria-label="搜索" aria-haspopup="dialog" aria-controls="site-search" aria-expanded="false"><span class="search-symbol" aria-hidden="true"></span></button>
+<a class="login" href="index.html#login">登录</a>
+<a class="avatar" href="account.html" aria-label="个人中心（未登录）"><img data-user-avatar src="assets/default-avatar.png" width="32" height="32" alt=""></a>
+<button class="nav-toggle" type="button" aria-label="打开导航" aria-controls="site-navigation" aria-expanded="false"><span aria-hidden="true"></span></button>
+</header>
+<main>
+<article class="research-article">
+<div class="article-toolbar"><a href="research.html">探索研究</a><button class="favorite-button" type="button" data-favorite="guide-ai-that-reaches-out-first.html" aria-label="收藏文章：能主动找你的AI，不需要你先下达指令" title="收藏文章：能主动找你的AI，不需要你先下达指令" aria-pressed="false" hidden>
+<span data-favorite-text>收藏</span><span data-favorite-icon hidden><svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1Z"/></svg></span>
+</button></div>
+<div class="article-header">
+<span class="article-meta"><time datetime="2026-11-28">2026 年 11 月 28 日</time> <span class="article-duration">· 约 4 分钟阅读</span></span>
+<h1>能主动找你的AI，不需要你先下达指令</h1>
+<p class="article-intro">从定时汇报到主动跟进，了解 Grok Bot、Muse、ChatGPT 的 dot、Claude Duet 和小豆分别擅长什么。</p>
+</div>
+<figure class="article-figure article-hero"><a class="image-zoom" href="assets/content/7f8a863cbeb1d3898d48015c30f9290160c7bc6dec0d04533353e97a1b287726.jpg" data-image-zoom aria-label="查看大图：夜间在笔记本电脑旁查看手机的人"><img class="article-image" src="assets/content/7f8a863cbeb1d3898d48015c30f9290160c7bc6dec0d04533353e97a1b287726.jpg" alt="夜间在笔记本电脑旁查看手机的人" loading="lazy" decoding="async"></a><figcaption>封面摄影 Sora Shimazaki · Pexels 5926383</figcaption></figure>
+<div class="article-layout">
+<nav class="article-outline article-outline-desktop" aria-label="本文目录">
+<ul>
+<li><a href="#article-section-1">五款产品，主动的方式各有侧重</a><ul><li><a href="#article-section-2">Grok Bot：把重复工作交给后台</a></li><li><a href="#article-section-3">Muse：让日常目标往前走</a></li><li><a href="#article-section-4">ChatGPT 的 dot：跟住跨好几天的项目</a></li><li><a href="#article-section-5">Claude Duet：把长短任务放进同一条对话</a></li><li><a href="#article-section-6">小豆：记住生活里的细节</a></li></ul></li>
+<li><a href="#article-section-7">值得主动找你的事，应该长什么样？</a></li>
+</ul>
+</nav>
+<nav class="article-outline article-outline-mobile" aria-label="本文目录" inert>
+<div class="article-outline-panel">
+<button class="article-outline-toggle" type="button" aria-expanded="false" aria-controls="article-outline-sections"><span>五款产品，主动的方式各有侧重</span></button>
+<button class="article-outline-close" type="button" aria-label="收起目录" hidden></button>
+<div class="article-outline-sections" id="article-outline-sections" hidden><ul>
+<li><a href="#article-section-1">五款产品，主动的方式各有侧重</a><ul><li><a href="#article-section-2">Grok Bot：把重复工作交给后台</a></li><li><a href="#article-section-3">Muse：让日常目标往前走</a></li><li><a href="#article-section-4">ChatGPT 的 dot：跟住跨好几天的项目</a></li><li><a href="#article-section-5">Claude Duet：把长短任务放进同一条对话</a></li><li><a href="#article-section-6">小豆：记住生活里的细节</a></li></ul></li>
+<li><a href="#article-section-7">值得主动找你的事，应该长什么样？</a></li>
+</ul></div>
+</div>
+</nav>
+<div class="article-reading">
+<div class="content-body"><p>周五下班前，你收到一条消息：「酒店的免费取消期限今晚到。我整理了两家同价位的备选，要看吗？」你下午没有打开聊天窗口，也没写提示词。上周，你已经把旅行计划交给助手，并允许它跟进。今天它发现了时间点，主动来找你。</p>
+<p>我们习惯的 AI 聊天是打开窗口、写问题、读答案。主动式助手把一部分工作延伸到了窗口之外。它可以继续处理交代过的事情，在约好的时间汇报，或者根据授权的消息和日历判断你是否需要知道一件事。同一个模型也可以同时有聊天入口和这类功能。</p>
+<h2 id="article-section-1" tabindex="-1">五款产品，主动的方式各有侧重</h2>
+<h3 id="article-section-2" tabindex="-1">Grok Bot：把重复工作交给后台</h3>
+<p>Grok Bot 适合从一件做法明确、要反复做的事开始。它支持按计划执行任务，还可以用连接的工具协作。例如，让它每到周一收集指定来源的变动，给你一份附原始链接的简报。设定一次之后，后续的运行与汇报可以按计划进行。适合看重任务可重复执行的人。</p>
+<h3 id="article-section-3" tabindex="-1">Muse：让日常目标往前走</h3>
+<p>Meta 的 Muse 把入口做成类似发消息的对话，也提供 WhatsApp 使用方式。给它一个目标，比如准备朋友聚餐，它可以记住之前提过的饮食偏好，继续整理菜单和采购清单，等有值得汇报的进展再回来找你。官方介绍中，发送邮件、购买等敏感操作会要求确认。</p>
+<h3 id="article-section-4" tabindex="-1">ChatGPT 的 dot：跟住跨好几天的项目</h3>
+<p>OpenAI 将这一功能称为 dots，你自己的那个助手叫 dot。它可以保留项目上下文，并在获授权时用连接的应用获取信息和继续工作。比如你交给它一份要在周五定稿的计划，随后用 ChatGPT 或已连接的 Slack、Teams 继续对话。它可以在工作有进展或需要你作决定时来汇报。</p>
+<h3 id="article-section-5" tabindex="-1">Claude Duet：把长短任务放进同一条对话</h3>
+<p>Anthropic 把 Duet 设计成一条持续的对话，可以用文字或语音沟通。回一句话和委托一个需要几天的工作都可以在同一个地方处理。它也会先来找你，例如根据已连接的信息提醒你会前需要补的材料，或者在处理任务途中带着进展回来。</p>
+<h3 id="article-section-6" tabindex="-1">小豆：记住生活里的细节</h3>
+<p>小豆（DouOS）更偏日常陪伴和个人记录。它用短消息和你聊天，可以记住你确认过的偏好、状态和灵感，也能把内容整理到「盒子」里。下次聊天时，它可以自然带回之前提过的事情。想要一处能随手放下生活片段、过几天还接得上话的地方，这类体验比处理表格和做日报更相关。</p>
+<figure class="article-figure"><a class="image-zoom" href="assets/content/83eba45c4168e5e7931ea59337f331c5e7cdb84e9268530beecd8897ae72c767.jpg" data-image-zoom aria-label="查看大图：夜色中一只手拿着亮屏手机"><img class="article-image" src="assets/content/83eba45c4168e5e7931ea59337f331c5e7cdb84e9268530beecd8897ae72c767.jpg" alt="夜色中一只手拿着亮屏手机" loading="lazy" decoding="async"></a><figcaption>摄影 Darya Grey_Owl · Pexels 15636542</figcaption></figure>
+<h2 id="article-section-7" tabindex="-1">值得主动找你的事，应该长什么样？</h2>
+<p>可以用三条问题来判断：它什么时候找你？它依据什么来找你？你收到消息以后能做什么？一条写着「有新邮件」的通知，可能只是把收件箱再播一遍。一条写着「原定周四的会议提前了两小时，两位同事刚好有冲突，要我整理几个候选时间吗」的消息，才真的节省了你的注意力。</p>
+<p>第一次试用，选一件你本来就会定期做的小事。比如让它每周检查一个公开页面，只有时间表改变时才发消息。说清来源、时间和通知条件，先看它是否会找对时机，再决定要不要给更多访问权限。各产品的开放地区、订阅和连接能力以官方信息为准。</p>
+<p>如果你今天只能交出去一件小事，就挑那个总要你反复想起、手动查一遍的。下次你收到提醒时，看看它是否已经把下一步准备好了。</p>
+<p>封面与配图来源于网络，侵删。</p></div>
+
+</div>
+</div>
+<div class="article-end">
+<div class="article-end-inner">
+<ul class="article-tags" aria-label="发布年份与标签"><li><time datetime="2026">2026</time></li><li>人工智能</li><li>个人智能体</li><li>主动式 AI</li></ul>
+<div class="article-author">
+<h2>作者</h2>
+<p>Codex by OpenAI</p>
+</div>
+</div>
+</div>
+</article>
+</main>
+<footer id="footer" aria-label="页脚">
+<nav class="footer-crumb" aria-label="当前位置"><a href="index.html">首页</a> / <a href="research.html">研究</a> / <span aria-current="page">能主动找你的AI，不需要你先下达指令</span></nav>
+<div class="footer-links">
+<div>
+<b>研究</b>
+<a href="research.html">探索研究</a>
+<a href="favorite-articles.html">收藏夹</a>
+</div>
+<div>
+<b>产品</b>
+<a href="products.html">浏览产品</a>
+<a href="cart.html">购物车</a>
+<a href="favorite-products.html">商品收藏</a>
+</div>
+<div>
+<b>关于</b>
+<a href="terms.html">服务条款</a>
+<a href="privacy.html">隐私政策</a>
+<a href="statement.html">声明</a>
+</div>
+<div>
+<b>联系</b>
+<a class="contact-link" href="https://x.com/JianghaoPeng" target="_blank" rel="noopener noreferrer" aria-label="X（新窗口打开）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3h4l12 18h-4L4 3ZM20 3l-6.5 7.5M4 21l6.5-7.5"/></svg><span>X</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+<a class="contact-link" href="https://t.me/NijiEhon" target="_blank" rel="noopener noreferrer" aria-label="Telegram（新窗口打开）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m9.78 18.65.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19l-9.48 5.99-4.1-1.28c-.88-.25-.89-.86.2-1.3L19.81 4.6c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.06-1.99 1.93c-.23.23-.42.42-.83.36Z"/></svg><span>Telegram</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+<a class="contact-link" href="mailto:pengjasper@icloud.com" aria-label="邮箱（打开邮件应用）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg><span>邮箱</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
+<a href="donate.html">捐赠</a>
+</div>
+<div>
+<b>账户</b>
+<a href="index.html#login">登录</a>
+<a href="account.html">个人中心</a>
+</div>
+</div>
+<div class="footer-bottom">
+<p class="footer-copyright">NijiEhon <span class="copyright-mark">©</span> 2026 <span class="footer-version"><span aria-label="网站版本 v1.0.0">v1.0.0</span> <span class="footer-beta">Beta</span></span></p>
+<details class="footer-language">
+<summary aria-label="选择语言，当前：简体中文 中国">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg>
+<span>简体中文 中国</span><span class="language-chevron" aria-hidden="true"></span>
+</summary>
+<div class="language-options"><button type="button" lang="zh-CN" aria-current="true">简体中文 中国 <span aria-hidden="true">✓</span></button></div>
+</details>
+</div>
+</footer>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>收到 SIM 卡后如何开始 · NijiEhon</title>
+<title>收到SIM卡后如何开始 · NijiEhon</title>
 <link rel="icon" type="image/png" href="assets/favicon.png">
 <link rel="preload" href="assets/fonts/google-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/fonts.css">
@@ -19,7 +19,8 @@
 <body>
 <header>
 <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">𒀭</span>NijiEhon</a>
-<nav aria-label="主导航">
+<nav id="site-navigation" aria-label="主导航">
+<button class="nav-back" type="button" aria-label="返回主导航" hidden></button>
 <div class="nav-group"><details id="research-menu"><summary>研究</summary><div>
 <a href="research.html">探索研究</a>
 <a href="favorite-articles.html">收藏夹</a>
@@ -40,34 +41,82 @@
 <a class="contact-link" href="mailto:pengjasper@icloud.com" aria-label="邮箱（打开邮件应用）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg><span>邮箱</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
 <a href="donate.html">捐赠</a>
 </div></details></div>
-<div class="nav-group"><button class="nav-link search" type="button" aria-label="搜索" aria-haspopup="dialog" aria-controls="site-search" aria-expanded="false"><span class="search-symbol" aria-hidden="true"></span></button></div>
+<a class="nav-login" href="index.html#login">登录</a>
 </nav>
+<button class="nav-link search" type="button" aria-label="搜索" aria-haspopup="dialog" aria-controls="site-search" aria-expanded="false"><span class="search-symbol" aria-hidden="true"></span></button>
 <a class="login" href="index.html#login">登录</a>
 <a class="avatar" href="account.html" aria-label="个人中心（未登录）"><img data-user-avatar src="assets/default-avatar.png" width="32" height="32" alt=""></a>
+<button class="nav-toggle" type="button" aria-label="打开导航" aria-controls="site-navigation" aria-expanded="false"><span aria-hidden="true"></span></button>
 </header>
 <main>
 <article class="research-article">
-<div class="article-toolbar"><a href="research.html">探索研究</a><button class="favorite-button" type="button" data-favorite="guide-1.html" aria-label="收藏文章：收到 SIM 卡后如何开始" title="收藏文章：收到 SIM 卡后如何开始" aria-pressed="false" hidden>
+<div class="article-toolbar"><a href="research.html">探索研究</a><button class="favorite-button" type="button" data-favorite="guide-1.html" aria-label="收藏文章：收到SIM卡后如何开始" title="收藏文章：收到SIM卡后如何开始" aria-pressed="false" hidden>
 <span data-favorite-text>收藏</span><span data-favorite-icon hidden><svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1Z"/></svg></span>
 </button></div>
 <div class="article-header">
-<span class="article-meta"><time datetime="2026-11-28">2026 年 11 月 28 日</time> · 约 1 分钟阅读</span>
-<h1>收到 SIM 卡后如何开始</h1>
-
+<span class="article-meta"><time datetime="2026-11-28">2026 年 11 月 28 日</time> <span class="article-duration">· 约 4 分钟阅读</span></span>
+<h1>收到SIM卡后如何开始</h1>
+<p class="article-intro">从辨认规格、安装到收发测试，按顺序把新号码准备好。适用于本站的英国 giffgaff 和美国 Ultra Mobile 电话卡。</p>
 </div>
-<figure class="article-figure article-hero"><a class="image-zoom" href="assets/placeholders/guide-activation.jpg" data-image-zoom aria-label="查看大图"><img class="article-image" src="assets/placeholders/guide-activation.jpg" alt="" loading="lazy" decoding="async"></a></figure>
+<figure class="article-figure article-hero"><a class="image-zoom" href="assets/content/64bf1450f1e0315fe6ab784a531625be66eddc1e44a43b6c15b7d935802af497.jpg" data-image-zoom aria-label="查看大图：平放的手机、SIM 卡和卡托"><img class="article-image" src="assets/content/64bf1450f1e0315fe6ab784a531625be66eddc1e44a43b6c15b7d935802af497.jpg" alt="平放的手机、SIM 卡和卡托" loading="lazy" decoding="async"></a><figcaption>封面摄影 Andrey Matveev · Pexels 28920287</figcaption></figure>
+<div class="article-layout">
+<nav class="article-outline article-outline-desktop" aria-label="本文目录">
+<ul>
+<li><a href="#article-section-1">第一步，确认自己收到哪种卡</a></li>
+<li><a href="#article-section-2">第二步，开通或安装</a><ul><li><a href="#article-section-3">giffgaff 未激活实体卡</a></li><li><a href="#article-section-4">包激活的实体卡和 eSIM</a></li></ul></li>
+<li><a href="#article-section-5">第三步，从一条普通短信开始测试</a></li>
+<li><a href="#article-section-6">测通之后，再把号码绑到账户</a></li>
+</ul>
+</nav>
+<nav class="article-outline article-outline-mobile" aria-label="本文目录" inert>
+<div class="article-outline-panel">
+<button class="article-outline-toggle" type="button" aria-expanded="false" aria-controls="article-outline-sections"><span>第一步，确认自己收到哪种卡</span></button>
+<button class="article-outline-close" type="button" aria-label="收起目录" hidden></button>
+<div class="article-outline-sections" id="article-outline-sections" hidden><ul>
+<li><a href="#article-section-1">第一步，确认自己收到哪种卡</a></li>
+<li><a href="#article-section-2">第二步，开通或安装</a><ul><li><a href="#article-section-3">giffgaff 未激活实体卡</a></li><li><a href="#article-section-4">包激活的实体卡和 eSIM</a></li></ul></li>
+<li><a href="#article-section-5">第三步，从一条普通短信开始测试</a></li>
+<li><a href="#article-section-6">测通之后，再把号码绑到账户</a></li>
+</ul></div>
+</div>
+</nav>
 <div class="article-reading">
-<div class="content-body"><p>保留卡套，通过官方入口核对激活步骤。完成后先测试短信与通话，再把号码绑定到常用账户。</p></div>
-<nav class="content-actions" aria-label="相关产品"><a class="pill" href="product-0.html">美国 Ultra Mobile 电话卡</a><a class="pill" href="product-1.html">英国 giffgaff 电话卡</a></nav>
+<div class="content-body"><p>刚收到卡，先把卡套和交付邮件留好。用订单上的商品名称核对运营商和规格，再决定是自行开通，还是按照已包含激活服务的交付指引安装。开通、安装和连上网络是三个环节，逐个确认会更容易排查。</p>
+<h2 id="article-section-1" tabindex="-1">第一步，确认自己收到哪种卡</h2>
+<p>未激活实体卡需要先在运营商处开通。包激活实体卡请先确认开通状态，再按随卡说明操作。eSIM 的安装材料通常通过电子方式交付，可能是一张二维码，也可能是一条链接或一组手动输入的信息。</p>
+<p>先确认手机已经解除运营商锁，能识别其他运营商的卡。选择 eSIM 的话，要核对手机的完整型号和销售地区，并观察设置里是否有「添加 eSIM」选项。安装前连上稳定的 Wi-Fi，把二维码或激活码放在自己能安全找回的地方。</p>
+<figure class="article-figure"><a class="image-zoom" href="assets/content/9903ba67f02e0ab53c15cabe9de65cae9050ade3c15909985d249a20a90b215f.jpg" data-image-zoom aria-label="查看大图：取出 SIM 卡托的手机特写"><img class="article-image" src="assets/content/9903ba67f02e0ab53c15cabe9de65cae9050ade3c15909985d249a20a90b215f.jpg" alt="取出 SIM 卡托的手机特写" loading="lazy" decoding="async"></a><figcaption>摄影 Andrey Matveev · Unsplash zs29-jZrAQo</figcaption></figure>
+<h2 id="article-section-2" tabindex="-1">第二步，开通或安装</h2>
+<h3 id="article-section-3" tabindex="-1">giffgaff 未激活实体卡</h3>
+<p>在 giffgaff 官网进入激活页面（giffgaff.com/activate），输入卡套上的六位激活码。开通一个新号码时，先退出已有的 giffgaff 账号，再用你能长期访问的邮箱建立一个新账号。在已绑定号码的账号上操作，可能会把原号码转到新卡上。按页面提示选择套餐或充值，完成付款和验证。提交后留意状态页和确认邮件，支付选项与所需金额以页面当时显示为准。</p>
+<p>如果付款页面显示失败，先查看银行卡和账户记录，确认是否已经扣款或开通，以免重复提交。向客服描述卡片规格、所在地区和出错的步骤就有帮助。发送报错截图前，遮住激活码、验证码和支付信息。</p>
+<h3 id="article-section-4" tabindex="-1">包激活的实体卡和 eSIM</h3>
+<p>本站的 Ultra Mobile 两种规格都包含激活，giffgaff 也有包激活规格。先看交付说明，核对开通状态和后续步骤。收到确认后，实体卡按卡托方向插入手机。eSIM 在手机设置中找到「添加 eSIM」，按交付指引扫码或用其他方式安装。iPhone 通常在「设置 → 蜂窝网络」里操作，安卓手机可在设置里搜「SIM」或「eSIM」。</p>
+<p>如果页面提示二维码已用过、配置已安装或线路正在激活，先去 SIM 列表看新线路是否已经出现。装好的 eSIM 先保留，换机或重装之前先核对运营商的迁移办法。</p>
+<h2 id="article-section-5" tabindex="-1">第三步，从一条普通短信开始测试</h2>
+<p>双卡手机可以把新线路命名为「英国」或「美国」，方便看清每次用的是哪张卡。保持原来的主卡负责移动数据，等确认新卡的漫游费和数据套餐之后，再按需调整。新线路打开后，先看有没有连接到网络，再用另一部手机测试发出和收到普通短信。需要通话的话，核对资费后再试拨。</p>
+<p>如果一直显示无服务，先检查线路是否打开、账号是否已激活，以及当前位置是否在运营商的覆盖或漫游范围内。境外用卡时，余额、合作网络和设备兼容性都会影响结果。普通短信收得到、某个 App 的验证码收不到时，可以再查该 App 对区号、号码类型和发送频率的规定。</p>
+<p>Ultra Mobile 用户如果打算用 Wi-Fi Calling，先查套餐和设备是否支持。运营商或手机可能要求你在设置中启用，并完成相应资料配置。开通后再单独实测你会用到的通话或短信。费用按运营商的规定核对。</p>
+<h2 id="article-section-6" tabindex="-1">测通之后，再把号码绑到账户</h2>
+<p>在运营商账户里记下完整号码、充值入口和余额，查清续费日期、长期不用会不会停号，以及哪些活动算保号。giffgaff 将连续六个月未使用的 SIM 视为不活跃。Ultra Mobile 则需要按具体套餐核对余额和续费规则。如果这是一张备用卡，现在就设个日历提醒。</p>
+<p>最后再把新号码添加到目标账户上。支持恢复邮箱、验证器或恢复码的，可以同时配置一个备用入口。这样以后换手机、换卡或收不到短信时，你还有可以自己掌握的恢复路径。</p>
+<p>封面与配图来源于网络，侵删。</p></div>
+<nav class="content-actions" aria-label="相关产品"><a class="pill" href="product-1.html">英国 giffgaff 电话卡</a><a class="pill" href="product-0.html">美国 Ultra Mobile 电话卡</a></nav>
+</div>
+</div>
 <div class="article-end">
-<p class="article-author"><span>作者</span> NijiEhon</p>
-<ul class="article-tags" aria-label="标签"><li>SIM 卡</li><li>开卡激活</li></ul>
+<div class="article-end-inner">
+<ul class="article-tags" aria-label="发布年份与标签"><li><time datetime="2026">2026</time></li><li>SIM 卡</li><li>开卡激活</li><li>使用指南</li></ul>
+<div class="article-author">
+<h2>作者</h2>
+<p>Codex by OpenAI</p>
+</div>
 </div>
 </div>
 </article>
 </main>
 <footer id="footer" aria-label="页脚">
-<nav class="footer-crumb" aria-label="当前位置"><a href="index.html">首页</a> / <a href="research.html">研究</a> / <span aria-current="page">收到 SIM 卡后如何开始</span></nav>
+<nav class="footer-crumb" aria-label="当前位置"><a href="index.html">首页</a> / <a href="research.html">研究</a> / <span aria-current="page">收到SIM卡后如何开始</span></nav>
 <div class="footer-links">
 <div>
 <b>研究</b>

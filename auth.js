@@ -153,7 +153,7 @@
     }
     const name = user ? (user.user_metadata?.nickname || user.user_metadata?.full_name || user.email?.split('@')[0] || '我的账户') : '访客';
     const href = user ? 'account.html' : 'index.html#login';
-    for (const link of [$('.login'), footerLogin]) {
+    for (const link of [...document.querySelectorAll('header .login, header .nav-login'), footerLogin]) {
       if (link) { link.textContent = user ? '个人中心' : '登录'; link.href = href; }
     }
     $('header .avatar')?.setAttribute('aria-label', user ? '个人中心' : '个人中心（未登录）');
