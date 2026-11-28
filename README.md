@@ -34,7 +34,7 @@ style.css 控制全站布局、响应式和减弱动画模式。site.js 处理�
 
 ## 真实账号系统：Supabase Free + Resend Free
 
-**当前状态：邮箱登录接入、页面同步、私有头像权限 SQL 已写好，并通过模拟接口测试。云端账号、SMTP 和真实邮件投递尚未配置或验证。** auth-config.js 的项目地址和公开密钥暂为空，因此页面提示“登录服务即将开放”，不会假装登录成功。
+**生产环境已配置 Supabase 邮箱验证码、Resend SMTP 和私有头像存储。** 验证码由 `login@auth.nijiehon.com` 发出。Supabase 项目地址和公开密钥位于 auth-config.js，SMTP 密钥只保存在 Supabase 控制台。下方步骤可用于重新配置服务。
 
 站点管理员可以用 GitHub 登录 Supabase 控制台；**网站客户只使用邮箱验证码注册/登录**，不需要 GitHub 账号，也不需要为网站创建 GitHub OAuth App。
 

@@ -30,8 +30,10 @@ async function connect(id) {
       let body = {}, code = 200, type = 'application/json';
       const url = new URL(request.url);
       if (url.pathname.endsWith('/auth-config.js')) {
-        if (!configured) { await send('Fetch.continueRequest', { requestId }); return; }
-        type = 'text/javascript'; body = 'window.NIJI_AUTH_CONFIG={supabaseUrl:"https://fixture.supabase.co",publishableKey:"sb_publishable_fixture",emailEnabled:true};';
+        type = 'text/javascript';
+        body = configured
+          ? 'window.NIJI_AUTH_CONFIG={supabaseUrl:"https://fixture.supabase.co",publishableKey:"sb_publishable_fixture",emailEnabled:true};'
+          : 'window.NIJI_AUTH_CONFIG={supabaseUrl:"",publishableKey:"",emailEnabled:true};';
       } else if (request.method === 'OPTIONS') { body = ''; }
       else if (url.pathname === '/auth/v1/otp') { sends++; if (failOtp) { code = 429; body = { code: 'over_email_send_rate_limit', msg: 'rate limited' }; } }
       else if (url.pathname === '/auth/v1/verify') {
