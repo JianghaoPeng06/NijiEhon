@@ -31,7 +31,7 @@ h2 { font-size: clamp(1.375rem, 2.7vw, 2rem); font-weight: 680; line-height: 1.3
 p { margin-block: .875rem 1.5rem; max-width: 42em }
 small { display: block; font-size: .875rem }
 :where(a) { color: inherit; text-decoration: none }
-article a:not(.pill), .login-privacy a { color: #155ba8 }
+article a:not(.pill), .login-privacy a, .statement-link { color: #155ba8 }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 3px }
 
 :where(button, input, select, textarea) { font: inherit; color: inherit }
@@ -419,7 +419,7 @@ article p { max-width: none; line-height: 1.8 }
 .lightbox-close { position: absolute; top: .55rem; right: .55rem; --rest-surface: #fff; font-size: 1.5rem }
 .lightbox-steps { padding: 0 }
 html:has(.image-lightbox[open]) { overflow: hidden }
-img:is(.cover, .mini, .article-image, .banner, .cart-image img)[src$=".png" i] { object-fit: contain }
+img:is(.article-image, .banner, .cart-image img)[src$=".png" i] { object-fit: contain }
 .product-information { min-width: 0; overflow-wrap: anywhere }
 .product-kicker { margin: 0; color: var(--muted); font-size: .875rem; font-weight: 600 }
 .product-information h1 { margin-block: .5rem .75rem; font-size: clamp(1.9rem, 3.6vw, 3.25rem) }
