@@ -101,34 +101,22 @@ export const catalog = [
         "name": "注册教学",
         "cents": 300,
         "fulfillment": "digital",
-        "stock": "available"
+        "stock": "available",
+        "note": "协助和教学使用AI"
       },
       {
         "name": "代注册",
         "cents": 800,
         "fulfillment": "digital",
-        "stock": "available"
-      }
-    ]
-  },
-  {
-    "slug": "3",
-    "title": "云服务器",
-    "image": "assets/placeholders/product-cloud.jpg",
-    "status": "published",
-    "sample": true,
-    "options": [
-      {
-        "name": "基础示例 · 1 vCPU / 1 GB",
-        "cents": 499,
-        "fulfillment": "digital",
-        "stock": "available"
+        "stock": "available",
+        "note": "须提供您的个人账号以便注册和您绑定的AI账号"
       },
       {
-        "name": "进阶示例 · 2 vCPU / 2 GB",
-        "cents": 949,
+        "name": "购买账号",
+        "cents": 2000,
         "fulfillment": "digital",
-        "stock": "available"
+        "stock": "restock",
+        "note": "成品账号售卖"
       }
     ]
   }

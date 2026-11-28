@@ -175,8 +175,7 @@ const searchItems = [
   ["product-1.html","英国 giffgaff 电话卡","产品","giffgaff SIM eSIM 英国 电话卡 手机卡 未激活 包激活 需要英国号码，可以选择自行激活的实体卡，或选含激活服务的实体卡和 eSIM。 通信 英国"],
   ["product-2.html","Apple 账号注册","产品","苹果 Apple ID Apple 账户 Apple 账号 注册教学 代注册 想为特定地区的 App 或 Apple 服务准备账号？可选注册教学或代注册。 账户 多地区"],
   ["product-google-account.html","Google 账号注册","产品","谷歌 Google 账户 Google 账号 注册教学 代注册 为日常邮件或 Google 服务准备账号，可按需选择注册教学或代注册。 账户 多地区"],
-  ["product-ai-account.html","AI 账号注册","产品","人工智能 AI 账户 AI 账号 注册教学 代注册 先确定想使用的 AI 平台，再选择按步骤自行注册或由我们代注册。 账户 多地区"],
-  ["product-3.html","云服务器","产品","VPS 云主机 用两种入门配置展示机房、内存与预算的选择方式，适合准备部署轻量网站的读者。 工具 多地区"],
+  ["product-ai-account.html","AI 账号注册","产品","人工智能 AI 账户 AI 账号 注册教学 代注册 提供ChatGPT，Claude，Gemini，Grok，Muse等主流AI的使用教程，请在受支持的地区使用。 账户 多地区"],
   // END ADMIN: search
   ["favorite-products.html", "商品收藏", "产品", "我的收藏 收藏商品"],
   ["favorite-articles.html", "收藏夹", "研究", "我的收藏 收藏文章"],

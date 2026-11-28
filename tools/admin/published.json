@@ -149,12 +149,12 @@
     {
       "slug": "ai-account",
       "title": "AI 账号注册",
-      "summary": "先确定想使用的 AI 平台，再选择按步骤自行注册或由我们代注册。",
+      "summary": "提供ChatGPT，Claude，Gemini，Grok，Muse等主流AI的使用教程，请在受支持的地区使用。",
       "image": "assets/content/6c8863a545ba2d2d4ec8bdf89bd2804a61d3b6fdcc2c62cf284a98457141c608.jpg",
       "imageAlt": "室内玻璃旋梯",
       "keywords": "人工智能 AI 账户 AI 账号 注册教学 代注册",
       "status": "published",
-      "weight": 2,
+      "weight": 5,
       "region": "多地区",
       "category": "账户",
       "url": "",
@@ -165,48 +165,28 @@
       "variants": [
         {
           "name": "注册教学",
-          "price": "3"
+          "price": "3",
+          "note": "协助和教学使用AI"
         },
         {
           "name": "代注册",
-          "price": "8"
-        }
-      ],
-      "body": "## 注册教学\n\n根据目标平台了解账号创建步骤，提前准备邮箱及平台要求的验证资料。\n\n## 代注册\n\n先确认平台、目标地区与使用需求，再根据平台要求安排注册。",
-      "delivery": "",
-      "notice": "平台开放范围及验证规则以官方页面为准。会员订阅和用量费用请在选购前另行核对。",
-      "sample": false
-    },
-    {
-      "slug": "3",
-      "title": "云服务器",
-      "summary": "用两种入门配置展示机房、内存与预算的选择方式，适合准备部署轻量网站的读者。",
-      "image": "assets/placeholders/product-cloud.jpg",
-      "imageAlt": "",
-      "keywords": "VPS 云主机",
-      "status": "published",
-      "weight": 1,
-      "region": "多地区",
-      "category": "工具",
-      "url": "https://www.digitalocean.com/products/droplets",
-      "currency": "USD",
-      "priceMode": "from",
-      "price": "4.99",
-      "unit": "月",
-      "variants": [
-        {
-          "name": "基础示例 · 1 vCPU / 1 GB",
-          "price": ""
+          "price": "8",
+          "note": "须提供您的个人账号以便注册和您绑定的AI账号"
         },
         {
-          "name": "进阶示例 · 2 vCPU / 2 GB",
-          "price": "9.49"
+          "name": "购买账号",
+          "price": "20",
+          "stock": "restock",
+          "note": "成品账号售卖"
         }
       ],
-      "body": "选择机房时考虑访客的主要地区。开通前准备 SSH 公钥，了解备份、流量与快照的计费规则。\n\n实际可选配置、服务地区和账单以云服务商控制台为准。",
-      "delivery": "电子开通说明（交付示例）",
-      "notice": "配置与金额均为演示，流量和快照的计费请以云服务商为准。",
-      "sample": true
+      "methodNotes": {
+        "digital": "购买请联系客服"
+      },
+      "body": "## 注册教学\n\n根据目标平台了解账号创建步骤，提前准备邮箱及平台要求的验证资料。\n\n## 代注册\n\n先确认平台、目标地区与使用需求，再根据平台要求安排注册。",
+      "delivery": "联系客服教学或直接线上交付",
+      "notice": "平台开放范围及验证规则以官方页面为准。会员订阅和用量费用请在选购前另行核对。请在受支持的地区下单。",
+      "sample": false
     }
   ],
   "articles": [
@@ -303,10 +283,10 @@
           "text": "确认机房、系统和预算。在创建实例前查看流量、快照和闲置资源的收费方式，同时准备 SSH 公钥。"
         }
       ],
-      "related": [
-        "3"
-      ]
+      "related": []
     }
   ],
-  "retired": []
+  "retired": [
+    "product-3.html"
+  ]
 }
