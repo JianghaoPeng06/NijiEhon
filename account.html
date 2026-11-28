@@ -64,6 +64,18 @@
 </div>
 <p id="avatar-login"><a class="pill dark" href="index.html#login">登录后修改头像</a></p>
 </dialog>
+<details id="password-settings" class="password-settings" hidden>
+<summary>设置或更改密码</summary>
+<form id="password-settings-form" method="post" aria-busy="true">
+<input id="password-account-email" type="hidden" name="username" autocomplete="username">
+<label for="account-password">新密码（至少 8 个字符）</label>
+<input id="account-password" name="password" type="password" required minlength="8" maxlength="72" autocomplete="new-password" data-auth-control disabled>
+<label for="account-password-confirm">确认新密码</label>
+<input id="account-password-confirm" type="password" required minlength="8" maxlength="72" autocomplete="new-password" data-auth-control disabled>
+<button type="submit" class="dark" data-auth-control disabled>保存密码</button>
+<p id="password-status" class="auth-status" role="status"></p>
+</form>
+</details>
 <h2>我的订单</h2>
 <div class="orders">登录后查看订单</div>
 <p id="account-action">

@@ -4,10 +4,25 @@
   const config = window.NIJI_AUTH_CONFIG || {};
   const form = $('#login');
   const card = $('#account-card');
+  const loginEmail = $('#login-email');
+  const loginPassword = $('#login-password');
+  const loginPasswordConfirm = $('#login-password-confirm');
+  const loginCode = $('#login-code');
+  const resendButton = $('#resend-code');
+  const passwordSettings = $('#password-settings');
+  const passwordForm = $('#password-settings-form');
+  const passwordStatus = $('#password-status');
   const footerLogin = $('footer a[href="index.html#login"]');
   const dialog = $('#avatar-dialog');
   const defaultAvatar = 'assets/default-avatar.png';
+  const loginViews = {
+    password: { title: '登录以使用完整功能', hint: '使用邮箱和密码登录', submit: '登录' },
+    signup: { title: '创建账号', hint: '使用邮箱注册，密码至少 8 个字符', submit: '注册并发送验证码' },
+    otp: { title: '验证码登录', hint: '使用邮箱验证码登录，首次验证可创建账号', submit: '获取邮箱验证码' },
+    recovery: { title: '找回密码', hint: '输入账号邮箱，获取重置验证码', submit: '发送重置验证码' }
+  };
   let client, user = null, ready = false, busy = false, sentEmail = '', resendAt = 0;
+  let loginMode = 'password', recoveryUserId = '';
   let avatarObjectUrl, avatarRevision = 0, avatarSignature = '', returnFocus;
   let authRevision = 0;
 
@@ -23,22 +38,64 @@
     if (error?.status === 429 || /rate_limit/.test(error?.code || '')) return '操作过于频繁，请稍后再试。';
     if (error?.code === 'otp_expired') return '验证码无效或已过期，请检查或重新获取。';
     if (error?.code === 'signup_disabled') return '暂未开放新账号注册。';
+    if (error?.code === 'invalid_credentials') return '邮箱或密码有误。如果还未设置密码，请使用验证码登录。';
+    if (error?.code === 'email_not_confirmed') return '请先验证邮箱，也可以使用验证码登录。';
+    if (error?.code === 'weak_password') return '密码不符合安全要求，请换一个更长或更复杂的密码。';
+    if (error?.code === 'same_password') return '新密码需要与原密码不同。';
+    if (error?.code === 'reauthentication_needed') return '请重新登录后再设置密码。';
+    if (error?.code === 'user_already_exists') return '请尝试登录。如果忘记密码，可以通过邮箱找回。';
     return '暂时无法完成操作，请检查网络后重试。';
+  }
+  function updateResend() {
+    if (!resendButton || !sentEmail) return;
+    const seconds = Math.max(0, Math.ceil((resendAt - Date.now()) / 1000));
+    resendButton.disabled = !ready || !client || busy || seconds > 0;
+    resendButton.textContent = seconds ? `${seconds} 秒后重发` : '重新发送验证码';
   }
   function controls() {
     const disabled = !ready || !client || busy;
     document.querySelectorAll('[data-auth-control]').forEach(node => { node.disabled = disabled; });
-    if ($('#resend-code')) {
-      const seconds = Math.max(0, Math.ceil((resendAt - Date.now()) / 1000));
-      $('#resend-code').disabled = disabled || seconds > 0;
-      $('#resend-code').textContent = seconds ? `${seconds} 秒后重发` : '重新发送验证码';
+    if (form) {
+      const resetting = !!recoveryUserId;
+      const checkingCode = !!sentEmail && !resetting;
+      const usePassword = resetting || (!sentEmail && ['password', 'signup'].includes(loginMode));
+      const newPassword = loginMode !== 'password';
+      const view = loginViews[loginMode];
+      $('#login-title').textContent = resetting ? '设置新密码' : view.title;
+      $('#login-hint').textContent = resetting ? '新密码至少 8 个字符' : checkingCode ? '输入邮件中的验证码' : view.hint;
+      loginEmail.readOnly = !!sentEmail;
+      loginEmail.hidden = resetting;
+      loginEmail.disabled = disabled || resetting;
+      loginPassword.hidden = !usePassword;
+      loginPassword.disabled = disabled || !usePassword;
+      loginPassword.required = usePassword;
+      loginPassword.autocomplete = newPassword ? 'new-password' : 'current-password';
+      loginPassword.minLength = newPassword ? 8 : 0;
+      loginPassword.placeholder = newPassword ? '输入新密码' : '输入密码';
+      loginPasswordConfirm.hidden = !usePassword || !newPassword;
+      loginPasswordConfirm.disabled = disabled || loginPasswordConfirm.hidden;
+      loginPasswordConfirm.required = !loginPasswordConfirm.hidden;
+      loginCode.required = checkingCode;
+      loginCode.disabled = disabled || !checkingCode;
+      $('#email-code-step').hidden = !checkingCode;
+      $('#email-submit').textContent = resetting ? '保存新密码' : checkingCode ? '验证邮箱' : view.submit;
+      $('#login-options').hidden = resetting;
+      $('#cancel-recovery').hidden = !resetting;
+      document.querySelectorAll('[data-login-mode]').forEach(button => { button.hidden = button.dataset.loginMode === loginMode; });
+      form.setAttribute('aria-busy', String(busy || !ready));
+      updateResend();
     }
-    if ($('#login-email')) $('#login-email').readOnly = !!sentEmail;
-    if ($('#login-code')) $('#login-code').required = !!sentEmail;
-    if ($('#email-code-step')) $('#email-code-step').hidden = !sentEmail;
-    if ($('#email-submit')) $('#email-submit').textContent = sentEmail ? '验证并登录' : '获取邮箱验证码';
-    form?.setAttribute('aria-busy', String(busy || !ready));
+    if (passwordForm) {
+      passwordForm.setAttribute('aria-busy', String(busy || !ready));
+      passwordForm.querySelectorAll('[data-auth-control]').forEach(node => { node.disabled = disabled || !user; });
+    }
     if ($('#account-edit')) $('#account-edit').disabled = !ready;
+  }
+  function clearLogin() {
+    loginMode = 'password';
+    recoveryUserId = '';
+    sentEmail = '';
+    form?.reset();
   }
   function setAvatar(source) {
     document.querySelectorAll('[data-user-avatar]').forEach(image => {
@@ -71,18 +128,26 @@
   function render(nextUser) {
     const changedUser = user?.id !== nextUser?.id;
     user = nextUser || null;
-    if (changedUser) { dialog?.close(); sentEmail = ''; form?.reset(); if ($('#avatar-status')) $('#avatar-status').textContent = ''; }
+    const resetting = !!user && user.id === recoveryUserId;
+    if (changedUser) {
+      dialog?.close();
+      if (!resetting) clearLogin();
+      if ($('#avatar-status')) $('#avatar-status').textContent = '';
+      if (passwordForm) { passwordForm.reset(); passwordSettings.open = false; passwordStatus.textContent = ''; }
+    }
     const name = user ? (user.user_metadata?.full_name || user.email?.split('@')[0] || '我的账户') : '访客';
     const href = user ? 'account.html' : 'index.html#login';
     for (const link of [$('.login'), footerLogin]) {
       if (link) { link.textContent = user ? '个人中心' : '登录'; link.href = href; }
     }
     $('header .avatar')?.setAttribute('aria-label', user ? '个人中心' : '个人中心（未登录）');
-    if (form) form.hidden = !!user;
-    if (card) card.hidden = !user;
+    if (form) form.hidden = !!user && !resetting;
+    if (card) card.hidden = !user || resetting;
     document.querySelectorAll('[data-account-name]').forEach(node => { node.textContent = name; });
     if ($('#name')) $('#name').textContent = name;
     if ($('#email')) $('#email').textContent = user?.email || '';
+    if (passwordSettings) passwordSettings.hidden = !user;
+    if ($('#password-account-email')) $('#password-account-email').value = user?.email || '';
     document.querySelectorAll('[data-sign-out]').forEach(node => { node.hidden = !user; });
     if ($('#account-login')) $('#account-login').hidden = !!user;
     if ($('.orders')) $('.orders').textContent = user ? '订单功能即将开放' : '登录后查看订单';
@@ -97,43 +162,122 @@
     }
     controls();
   }
-  async function action(task) {
+  async function action(task, report = status) {
     if (!ready || !client || busy) return;
-    busy = true; controls(); status('');
-    try { await task(); } catch (error) { status(errorMessage(error)); }
+    busy = true; controls(); report('');
+    try { await task(); } catch (error) { report(errorMessage(error)); }
     finally { busy = false; controls(); }
   }
+  function passwordIssue(password, confirm) {
+    if ([...password].length < 8 || new TextEncoder().encode(password).length > 72) return '密码需要至少 8 个字符，且不超过 72 字节。';
+    return password === confirm ? '' : '两次输入的密码不一致。';
+  }
+  function signedIn(nextUser, message = '登录成功。') {
+    clearLogin();
+    render(nextUser);
+    status(message);
+    $('#account-card a')?.focus();
+  }
+  function beginRecovery(nextUser) {
+    if (loginMode === 'recovery' && sentEmail && nextUser?.email?.toLowerCase() === sentEmail.toLowerCase()) {
+      recoveryUserId = nextUser.id;
+    }
+  }
   async function sendCode() {
-    const email = $('#login-email').value.trim();
     if (Date.now() < resendAt) { status('请等待倒计时结束后再发送。'); return; }
-    const { error } = await client.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
-    if (error) throw error;
+    const email = sentEmail || loginEmail.value.trim();
+    const mode = loginMode;
+    let result;
+    if (mode === 'signup' && !sentEmail) {
+      const issue = passwordIssue(loginPassword.value, loginPasswordConfirm.value);
+      if (issue) { status(issue); return; }
+      result = await client.auth.signUp({ email, password: loginPassword.value });
+    } else if (mode === 'signup') {
+      result = await client.auth.resend({ type: 'signup', email });
+    } else if (mode === 'recovery') {
+      result = await client.auth.resetPasswordForEmail(email);
+    } else {
+      result = await client.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+    }
+    if (result.error) throw result.error;
+    if (mode === 'signup' && result.data.session) { signedIn(result.data.user); return; }
+    if (loginMode !== mode || user) return;
     sentEmail = email; resendAt = Date.now() + 60000;
-    controls(); status('验证码已发送，请查收邮箱（也可检查垃圾邮件）。');
-    $('#login-code').focus();
+    loginPassword.value = ''; loginPasswordConfirm.value = ''; loginCode.value = '';
+    status(mode === 'recovery'
+      ? '如果此邮箱已有账号，重置验证码将发送到该邮箱。'
+      : '请查收邮箱验证码，也可检查垃圾邮件。');
   }
   form?.addEventListener('submit', event => {
     event.preventDefault();
     if (!config.emailEnabled) return;
     action(async () => {
-      if (!sentEmail) return sendCode();
-      const { data, error } = await client.auth.verifyOtp({ email: sentEmail, token: $('#login-code').value.trim(), type: 'email' });
+      if (loginMode === 'password') {
+        const { data, error } = await client.auth.signInWithPassword({ email: loginEmail.value.trim(), password: loginPassword.value });
+        if (error) throw error;
+        signedIn(data.user);
+        return;
+      }
+      if (recoveryUserId) {
+        if (user?.id !== recoveryUserId) return;
+        const issue = passwordIssue(loginPassword.value, loginPasswordConfirm.value);
+        if (issue) { status(issue); return; }
+        const { data, error } = await client.auth.updateUser({ password: loginPassword.value });
+        if (error) throw error;
+        signedIn(data.user, '密码已重置，登录成功。');
+        return;
+      }
+      if (!sentEmail) { await sendCode(); return; }
+      const type = loginMode === 'recovery' ? 'recovery' : loginMode === 'signup' ? 'signup' : 'email';
+      const { data, error } = await client.auth.verifyOtp({ email: sentEmail, token: loginCode.value.trim(), type });
       if (error) throw error;
-      render(data.user); status('登录成功。');
-      $('#account-card a')?.focus();
+      if (type === 'recovery') {
+        beginRecovery(data.user);
+        loginCode.value = '';
+        render(data.user);
+      } else signedIn(data.user);
+    }).then(() => {
+      if (recoveryUserId && !form.hidden) loginPassword.focus();
+      else if (sentEmail && !loginCode.value && !form.hidden) loginCode.focus();
     });
   });
-  $('#resend-code')?.addEventListener('click', () => action(sendCode));
+  resendButton?.addEventListener('click', () => action(sendCode).then(() => loginCode.focus()));
   $('#change-email')?.addEventListener('click', () => {
     if (busy) return;
-    sentEmail = ''; $('#login-code').value = ''; controls(); status(''); $('#login-email').focus();
+    sentEmail = ''; loginCode.value = ''; controls(); status(''); loginEmail.focus();
   });
-  if (form) setInterval(controls, 1000);
+  document.querySelectorAll('[data-login-mode]').forEach(button => button.addEventListener('click', () => {
+    if (busy || user) return;
+    const email = loginEmail.value;
+    clearLogin();
+    loginMode = button.dataset.loginMode;
+    loginEmail.value = email;
+    controls(); status(''); loginEmail.focus();
+  }));
+  if (form) setInterval(updateResend, 1000);
+  passwordForm?.addEventListener('submit', event => {
+    event.preventDefault();
+    const currentUser = user;
+    if (!currentUser) return;
+    const report = message => { passwordStatus.textContent = message; };
+    action(async () => {
+      const password = $('#account-password').value;
+      const issue = passwordIssue(password, $('#account-password-confirm').value);
+      if (issue) { report(issue); return; }
+      const { data, error } = await client.auth.updateUser({ password });
+      if (error) throw error;
+      if (user?.id !== currentUser.id) return;
+      render(data.user);
+      passwordForm.reset();
+      $('#password-account-email').value = data.user.email || '';
+      report('密码已保存，下次可以使用邮箱和密码登录。');
+    }, message => { if (user?.id === currentUser.id) report(message); });
+  });
   document.querySelectorAll('[data-sign-out]').forEach(button => button.addEventListener('click', () => action(async () => {
     const { error } = await client.auth.signOut({ scope: 'local' });
     if (error) throw error;
     render(null); status('已退出登录。');
-    if (form) $('#login-email')?.focus(); else $('#account-login')?.focus();
+    if (form) loginEmail.focus(); else $('#account-login')?.focus();
   })));
   $('#account-back')?.addEventListener('click', () => {
     if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) history.back();
@@ -201,6 +345,7 @@
       });
       client.auth.onAuthStateChange((event, session) => {
         if (event === 'INITIAL_SESSION') return;
+        if (event === 'PASSWORD_RECOVERY') beginRecovery(session?.user);
         authRevision++; render(session?.user || null);
         if (event === 'SIGNED_OUT') status('已退出登录。');
       });

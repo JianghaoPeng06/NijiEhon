@@ -13,6 +13,8 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const browser = spawn(chrome, ['--headless=new', '--disable-gpu', '--no-first-run', `--remote-debugging-port=${port}`, '--user-data-dir=' + fs.mkdtempSync(path.join(os.tmpdir(), 'nijiehon-auth-')), 'about:blank'], { windowsHide: true, stdio: 'ignore' });
 const sockets = [];
 let configured = false, failOtp = false, expireUser = false, sends = 0, uploads = 0;
+let signupSends = 0, signupResends = 0, recoverySends = 0, passwordUpdates = 0, savedPassword = '';
+let verificationType = 'email';
 const account = { id: '11111111-1111-4111-8111-111111111111', aud: 'authenticated', role: 'authenticated', email: 'test@example.com', email_confirmed_at: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), app_metadata: { provider: 'email', providers: ['email'] }, user_metadata: {}, identities: [] };
 const token = () => [ { alg: 'HS256', typ: 'JWT' }, { sub: account.id, aud: 'authenticated', role: 'authenticated', exp: Math.floor(Date.now()/1000)+3600, iat: Math.floor(Date.now()/1000) } ].map(value => Buffer.from(JSON.stringify(value)).toString('base64url')).join('.')+'.test-signature';
 const session = () => ({ access_token: token(), refresh_token: 'test-refresh-token', expires_in: 3600, token_type: 'bearer', user: account });
@@ -35,15 +37,47 @@ async function connect(id) {
           ? 'window.NIJI_AUTH_CONFIG={supabaseUrl:"https://fixture.supabase.co",publishableKey:"sb_publishable_fixture",emailEnabled:true};'
           : 'window.NIJI_AUTH_CONFIG={supabaseUrl:"",publishableKey:"",emailEnabled:true};';
       } else if (request.method === 'OPTIONS') { body = ''; }
-      else if (url.pathname === '/auth/v1/otp') { sends++; if (failOtp) { code = 429; body = { code: 'over_email_send_rate_limit', msg: 'rate limited' }; } }
+      else if (url.pathname === '/auth/v1/otp') {
+        sends++; verificationType = 'email';
+        if (failOtp) { code = 429; body = { code: 'over_email_send_rate_limit', msg: 'rate limited' }; }
+      } else if (url.pathname === '/auth/v1/signup') {
+        const { email, password } = JSON.parse(request.postData);
+        assert.equal(email, account.email);
+        assert.equal(password, 'SignupPass123');
+        signupSends++; verificationType = 'signup'; savedPassword = password;
+        body = account;
+      } else if (url.pathname === '/auth/v1/resend') {
+        const { type: resendType, email } = JSON.parse(request.postData);
+        assert.equal(resendType, 'signup');
+        assert.equal(email, account.email);
+        signupResends++;
+      } else if (url.pathname === '/auth/v1/recover') {
+        assert.equal(JSON.parse(request.postData).email, account.email);
+        recoverySends++; verificationType = 'recovery';
+      }
       else if (url.pathname === '/auth/v1/verify') {
         const input = JSON.parse(request.postData);
-        if (input.token === '123456' && input.type === 'email') body = session();
+        assert.equal(input.email, account.email);
+        if (input.token === '123456' && input.type === verificationType) body = session();
         else { code = 403; body = { code: 'otp_expired', msg: 'Token has expired or is invalid' }; }
-      } else if (url.pathname === '/auth/v1/token') body = session();
+      } else if (url.pathname === '/auth/v1/token') {
+        if (url.searchParams.get('grant_type') === 'password') {
+          const { email, password } = JSON.parse(request.postData);
+          if (email !== account.email || !savedPassword || password !== savedPassword) {
+            code = 400; body = { code: 'invalid_credentials', msg: 'Invalid login credentials' };
+          } else body = session();
+        } else body = session();
+      }
       else if (url.pathname === '/auth/v1/user') {
         if (expireUser) { code = 401; body = { code: 'session_not_found', msg: 'Session not found' }; }
-        else { if (request.method === 'PUT') Object.assign(account.user_metadata, JSON.parse(request.postData).data); body = account; }
+        else {
+          if (request.method === 'PUT') {
+            const { data, password } = JSON.parse(request.postData);
+            if (password) { savedPassword = password; passwordUpdates++; }
+            Object.assign(account.user_metadata, data);
+          }
+          body = account;
+        }
       } else if (url.pathname === '/auth/v1/logout') body = {};
       else if (url.pathname.includes('/storage/v1/object/')) {
         assert(url.pathname.endsWith(account.id + '/avatar.png'), 'avatar uses authenticated user id');
@@ -71,6 +105,8 @@ async function connect(id) {
   await main.run('sessionStorage.setItem("nijiehon.demoEmail","fake@example.com")');
   await main.navigate('index.html');
   assert(await main.run('!document.querySelector("#login").hidden && document.querySelector("#account-card").hidden && !sessionStorage.getItem("nijiehon.demoEmail")'));
+  assert(await main.run('!document.querySelector("#login-password").hidden && document.querySelector("#email-code-step").hidden'));
+  await main.run('document.querySelector(\'[data-login-mode="otp"]\').click()');
   failOtp = true;
   await main.run('document.querySelector("#login-email").value="test@example.com";document.querySelector("#login").requestSubmit()');
   await main.until('document.querySelector("[data-auth-status]").textContent.includes("过于频繁")');
@@ -87,6 +123,9 @@ async function connect(id) {
   const second = await connect(secondId);
   await second.navigate('account.html');
   assert.equal(await second.run('document.querySelector("#email").textContent'), account.email);
+  await second.run('document.querySelector("#password-settings summary").click();document.querySelector("#account-password").value="OriginalPass123";document.querySelector("#account-password-confirm").value="OriginalPass123";document.querySelector("#password-settings-form").requestSubmit()');
+  await second.until('document.querySelector("#password-status").textContent.includes("密码已保存")');
+  assert.equal(passwordUpdates, 1);
   await second.run('document.querySelector("#avatar-preview").click()');
   assert(await second.run('document.querySelector("#avatar-dialog").open && !document.querySelector("#avatar-settings").hidden'));
   await second.run(`(async()=>{const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;canvas.getContext('2d').fillRect(32,32,64,64);const blob=await new Promise(r=>canvas.toBlob(r));const dt=new DataTransfer();dt.items.add(new File([blob],'avatar.png',{type:'image/png'}));const input=document.querySelector('#avatar-file');input.files=dt.files;input.dispatchEvent(new Event('change'));})()`);
@@ -104,14 +143,48 @@ async function connect(id) {
   fs.writeFileSync(path.join(os.tmpdir(),'nijiehon-login-mobile.png'),Buffer.from((await main.send('Page.captureScreenshot',{format:'png'})).data,'base64'));
   await main.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
   fs.writeFileSync(path.join(os.tmpdir(),'nijiehon-login-desktop.png'),Buffer.from((await main.send('Page.captureScreenshot',{format:'png'})).data,'base64'));
-  // Create a session, then reject it on restoration: stale local tokens cannot display a user.
-  await main.run('document.querySelector("#login-email").value="test@example.com";document.querySelector("#login").requestSubmit()');
+  const emailCount = sends;
+  await main.run('document.querySelector("#login-email").value="test@example.com";document.querySelector("#login-password").value="WrongPass123";document.querySelector("#login").requestSubmit()');
+  await main.until('document.querySelector("[data-auth-status]").textContent.includes("邮箱或密码有误")');
+  await main.run('document.querySelector("#login-password").value="OriginalPass123";document.querySelector("#login").requestSubmit()');
+  await main.until('document.querySelector("#login").hidden');
+  assert.equal(sends, emailCount);
+  assert.equal(signupSends + recoverySends, 0);
+  await main.run('document.querySelector("#account-card [data-sign-out]").click()');
+  await main.until('!document.querySelector("#login").hidden && document.querySelector("#login").getAttribute("aria-busy") === "false"');
+
+  await main.run('document.querySelector(\'[data-login-mode="signup"]\').click();document.querySelector("#login-email").value="test@example.com";document.querySelector("#login-password").value="SignupPass123";document.querySelector("#login-password-confirm").value="MismatchPass123";document.querySelector("#login").requestSubmit()');
+  await main.until('document.querySelector("[data-auth-status]").textContent.includes("不一致")');
+  assert.equal(signupSends, 0);
+  await main.run('document.querySelector("#login-password-confirm").value="SignupPass123";document.querySelector("#login").requestSubmit()');
   await main.until('!document.querySelector("#email-code-step").hidden && document.querySelector("#login").getAttribute("aria-busy") === "false"');
+  assert.equal(signupSends, 1);
+  assert(await main.run('document.querySelector("#login-password").value === ""'));
+  await main.run('window.actualNow=Date.now.bind(Date);Date.now=()=>window.actualNow()+61000');
+  await main.until('!document.querySelector("#resend-code").disabled');
+  await main.run('document.querySelector("#resend-code").click()');
+  await main.until('document.querySelector("#login").getAttribute("aria-busy") === "false"');
+  assert.equal(signupResends, 1);
+  assert.equal(signupSends, 1);
   await main.run('document.querySelector("#login-code").value="123456";document.querySelector("#login").requestSubmit()');
   await main.until('document.querySelector("#login").hidden');
+  await main.run('document.querySelector("#account-card [data-sign-out]").click()');
+  await main.until('!document.querySelector("#login").hidden && document.querySelector("#login").getAttribute("aria-busy") === "false"');
+
+  await main.run('Date.now=()=>window.actualNow()+122000;document.querySelector(\'[data-login-mode="recovery"]\').click();document.querySelector("#login-email").value="test@example.com";document.querySelector("#login").requestSubmit()');
+  await main.until('!document.querySelector("#email-code-step").hidden && document.querySelector("#login").getAttribute("aria-busy") === "false"');
+  assert.equal(recoverySends, 1);
+  await main.run('document.querySelector("#login-code").value="123456";document.querySelector("#login").requestSubmit()');
+  await main.until('document.querySelector("#login-title").textContent === "设置新密码" && document.querySelector("#login").getAttribute("aria-busy") === "false"');
+  assert(await main.run('!document.querySelector("#login").hidden && document.querySelector("#account-card").hidden && document.querySelector("#login-code").value === ""'));
+  await main.run('document.querySelector("#login-password").value="RecoveryPass123";document.querySelector("#login-password-confirm").value="RecoveryPass123";document.querySelector("#login").requestSubmit()');
+  await main.until('document.querySelector("#login").hidden && !document.querySelector("#account-card").hidden');
+  assert.equal(passwordUpdates, 2);
+  assert.equal(savedPassword, 'RecoveryPass123');
+  // Reject the current session on restoration: stale local tokens cannot display a user.
   expireUser = true;
   await main.navigate('account.html');
   assert(await main.run('document.querySelector("#name").textContent === "访客"'));
-  console.log('PASS: missing config; demo rejection; rate limit; OTP send/invalid/valid; real SDK session restore; two-tab signout; private avatar upload/sync; revoked session; mobile layout. Mock API only.');
+  console.log('PASS: password sign-in without email; OTP fallback; password setup; signup, resend and recovery; session restoration and logout; private avatar upload; mobile layout. Mock API only.');
   await main.send('Browser.close');
 })().catch(error => { console.error(error); process.exitCode=1; }).finally(() => { sockets.forEach(socket=>socket.close()); browser.kill(); });

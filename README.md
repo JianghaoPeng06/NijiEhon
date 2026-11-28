@@ -2,6 +2,34 @@
 
 nijiehon.com 的国际数字生活网站，使用原生多页 HTML、CSS 和 JavaScript，无构建依赖。
 
+## 生产环境交接
+
+截至 2026-11-28，Cloudflare Pages 的构建配置已补全内页、样式和脚本，主站的 18 个页面均通过线上检查。站点使用 Supabase 提供邮箱账号和私有头像存储。[主站](https://nijiehon.com/) · [www 入口](https://www.nijiehon.com/) · [Pages 地址](https://nijiehon.pages.dev/)
+
+### 账号与资源
+
+本次使用已有的域名、GitHub 仓库、Cloudflare Pages 项目、Supabase 项目和 Resend 团队。新增的资源是 Resend 发信子域和专用密钥、Cloudflare 发信 DNS 记录、Squarespace 的 DNSSEC DS 记录，以及 Supabase 私有头像桶和三条访问策略。
+
+| 服务 | 资源与职责 | 管理入口 |
+| --- | --- | --- |
+| GitHub | `JianghaoPeng06/NijiEhon` 是源码仓库，`main` 推送后触发生产部署 | [GitHub 仓库](https://github.com/JianghaoPeng06/NijiEhon) |
+| Cloudflare | Pages 项目 `nijiehon` 负责托管。Cloudflare 同时管理权威 DNS、DNSSEC 签名和浏览器缓存策略 | [Pages 项目](https://dash.cloudflare.com/1abaa82b108729621cc731ab27be8d88/pages/view/nijiehon) |
+| Squarespace / Google Workspace | `nijiehon.com` 在 Squarespace 管理，DNSSEC 的 DS 记录也保存在这里。域名控制台显示续费由 Google Workspace 管理 | [Squarespace 域名](https://account.squarespace.com/domains/managed/nijiehon.com) |
+| Supabase | Free 项目 `NijiEhon` 位于首尔，负责访客注册、登录、会话和私有头像。管理员可使用已有的 GitHub 登录进入控制台 | [Supabase 项目](https://supabase.com/dashboard/project/iwujbfmunheilhndgibz) |
+| Resend | 已有团队中新增发信域 `auth.nijiehon.com`，区域为东京。专用密钥 `NijiEhon Supabase SMTP` 仅有该域名的发信权限 | [Resend 发信域](https://resend.com/domains/4c572718-8977-4405-87b9-6d93ec316518) · [API Keys](https://resend.com/api-keys) |
+
+### 需要保管的访问权限
+
+- 保留 GitHub 仓库、Cloudflare、Squarespace、Google Workspace、Supabase 和 Resend 的管理员访问方式及双重验证恢复信息。生产发布、域名续费、DNS 和邮件分别在上表对应的服务中管理。
+- 浏览器只使用 [auth-config.js](auth-config.js) 中的 Project URL 和 `sb_publishable_` 公开密钥。数据库密码、`sb_secret_` 或旧的 `service_role` 密钥应保存在密码管理器或服务器配置中。
+- Resend SMTP 密钥仅填在 Supabase 的 SMTP 密码字段。轮换时，在 Resend 创建一个同样限定至 `auth.nijiehon.com` 的发信密钥，更新 Supabase 并验证投递，再撤销旧密钥。邮件登录用户通过网站自行注册，管理员在 Supabase Authentication → Users 中查看。
+
+### 域名、DNSSEC 与发信记录
+
+- 权威 DNS 为 Cloudflare 的 `gigi.ns.cloudflare.com` 和 `odin.ns.cloudflare.com`。DNSSEC 已启用，Squarespace 已发布匹配的 DS，验收时的 Key Tag 为 `2371`、算法为 `13`、摘要类型为 `2`（SHA-256）。两台 `.com` 权威服务器均返回了该记录，多家公共解析器验证通过。[Cloudflare DNSSEC 设置](https://dash.cloudflare.com/1abaa82b108729621cc731ab27be8d88/nijiehon.com/dns/settings) · [注册局记录](https://rdap.verisign.com/com/v1/domain/nijiehon.com)
+- 如需停用 DNSSEC 或采用先停用再迁移的方式更换权威 DNS，先在 Squarespace 移除 DS，等父区记录的 TTL 到期，再停用 Cloudflare 签名或更换名称服务器。[Cloudflare DNSSEC 操作说明](https://developers.cloudflare.com/dns/dnssec/)
+- Resend 发信依赖 Cloudflare 上的两个 CNAME（`send.auth`、`rsend.auth`）和一个 DKIM TXT（`resend._domainkey.auth`）。重建或迁移 DNS 时，以 Resend 控制台显示的当前值为准。[Resend 发信记录](https://resend.com/domains/4c572718-8977-4405-87b9-6d93ec316518)
+
 ## 本地查看
 
 从仓库根目录运行 `py -m http.server 8001`，访问 http://127.0.0.1:8001 。已有预览服务时直接复用。真实登录需要 HTTP/HTTPS，不能双击 HTML 使用 file://。localhost 与 127.0.0.1 是不同来源，请始终使用配置中的同一地址。
@@ -11,7 +39,7 @@ nijiehon.com 的国际数字生活网站，使用原生多页 HTML、CSS 和 Jav
 - index.html 按画稿展示访客首页、邮箱卡片、大阪站横幅、产品、研究和声明。访客显示登录卡片，登录后切换成欢迎卡片和个人中心入口，退出后恢复。
 - research.html 展示精选与文章列表，guide-*.html 是正文。
 - products.html 支持地区和类别组合筛选。product-*.html 介绍产品，随后跳转官方站点。
-- terms.html、privacy.html、statement.html 分别为服务条款、隐私政策、声明的独立文章页，沿用原有文字。about.html 的旧锚点跳转到相应文章。
+- terms.html、privacy.html、statement.html 分别为服务条款、隐私政策、声明的独立文章页。about.html 的旧锚点跳转到相应文章。
 - 顶栏和页脚联系区统一提供带图标及外链箭头的 X（https://x.com/JianghaoPeng）、Telegram（https://t.me/NijiEhon）、邮箱（mailto:pengjasper@icloud.com）；捐赠仍进入站内页面。contact.html 兼容旧链接，打开首页联系菜单。
 - 顶栏搜索在当前页打开悬浮窗口，支持即时筛选、方向键选择、Esc 关闭和 Ctrl/Cmd+K；search.html 兼容旧链接并转到首页搜索浮层。account.html 根据真实会话展示名称、邮箱、头像与退出按钮，访客显示登录提示。
 - donate.html 提供预设及自定义金额。实际收款和订单服务尚未接入；不会把占位订单当成真实业务数据。
@@ -22,7 +50,7 @@ nijiehon.com 的国际数字生活网站，使用原生多页 HTML、CSS 和 Jav
 
 全站英文字体为 Google Sans，中文为 Noto Sans SC。`assets/fonts.css` 声明可变字重和 Unicode 分片，字体文件自托管于 `assets/fonts/`，按当前页面字符加载；两套字体的 OFL 许可保存在 assets 中。表单控件和页脚继承同一字体栈，部署时需一并上传字体目录及样式文件。
 
-style.css 控制全站布局、响应式和减弱动画模式。site.js 处理菜单、筛选、搜索；auth.js 统一处理真实账号状态。原本输入任意邮箱即可登录的本机演示已移除，旧演示数据不会被当成真实账号。assets/station.jpg 来自草稿，作为可替换横幅。顶部导航与全站页脚保持同一结构：研究和产品直达汇总页，关于列出三篇独立文章，联系列出渠道和捐赠，账户提供登录与个人中心。更新标题和链接时同步检查首页、列表页、搜索及所有页面的顶部导航和页脚。上线时将 HTML、style.css、site.js、auth.js、auth-config.js 和 assets 一并放到静态托管根目录，再配置域名。SQL、测试与开发文件不需要发布。
+style.css 控制全站布局、响应式和减弱动画模式。site.js 处理菜单、筛选、搜索；auth.js 统一处理真实账号状态。原本输入任意邮箱即可登录的本机演示已移除，旧演示数据不会被当成真实账号。assets/station.jpg 来自草稿，作为可替换横幅。顶部导航与全站页脚保持同一结构：研究和产品直达汇总页，关于列出三篇独立文章，联系列出渠道和捐赠，账户提供登录与个人中心。更新标题和链接时同步检查首页、列表页、搜索及所有页面的顶部导航和页脚。生产发布由下方的 Cloudflare Pages 流程完成。
 
 ## 导航与动效
 
@@ -30,91 +58,58 @@ style.css 控制全站布局、响应式和减弱动画模式。site.js 处理�
 
 顶栏与个人中心使用真实头像图片，访客使用 `assets/default-avatar.png`（透明背景）。个人中心左上角返回站内上一页，无站内来源时返回首页；头像以圆形显示，点击可打开大图预览；资料区域使用白色背景。右上角编辑图标打开同一头像窗口，未登录时进入邮箱登录入口。访客可预览默认头像，登录后可在窗口中更换；支持 Esc、关闭按钮或点击遮罩关闭。登录后可更换头像，支持不超过 5 MB 的 PNG、JPEG、WebP，最长边缩放到 256px 后以保留透明通道的 PNG 上传至 Supabase 私有 avatars 桶。每个账号只有自己的 `<user-id>/avatar.png`；退出后清除页面显示，服务器头像保留，支持再次登录及跨设备读取。未上传自定义头像时使用默认图。
 
-顶栏「研究」「产品」直接进入各自汇总页；「关于」展开三篇独立文章，「联系」展开联系渠道和捐赠页。个人中心是 account.html，登录入口连接首页邮箱验证码卡片。首页保留研究文章内容，搜索使用悬浮窗口。内页面包屑标明层级；研究文章直接连接对应产品。首屏依次落定，菜单以下拉帘幕展开，按钮按压有轻微反馈。系统启用减少动态效果时使用静态布局。
+顶栏「研究」「产品」直接进入各自汇总页；「关于」展开三篇独立文章，「联系」展开联系渠道和捐赠页。个人中心是 account.html，登录入口连接首页邮箱登录卡片。首页保留研究文章内容，搜索使用悬浮窗口。内页面包屑标明层级；研究文章直接连接对应产品。首屏依次落定，菜单以下拉帘幕展开，按钮按压有轻微反馈。系统启用减少动态效果时使用静态布局。
 
-## 真实账号系统：Supabase Free + Resend Free
+## 邮箱登录与头像
 
-**生产环境已配置 Supabase 邮箱验证码、Resend SMTP 和私有头像存储。** 验证码由 `login@auth.nijiehon.com` 发出。Supabase 项目地址和公开密钥位于 auth-config.js，SMTP 密钥只保存在 Supabase 控制台。下方步骤可用于重新配置服务。
-
-站点管理员可以用 GitHub 登录 Supabase 控制台；**网站客户只使用邮箱验证码注册/登录**，不需要 GitHub 账号，也不需要为网站创建 GitHub OAuth App。
+网站默认使用邮箱和密码登录。新用户选择「注册」，设置密码并用邮件验证码确认邮箱。已有验证码账号的用户可选择「验证码登录」，再到「个人中心 → 设置或更改密码」为现有账号设置密码。忘记密码时从登录页选择「找回密码」，验证邮箱后即可设置新密码。[线上登录入口](https://nijiehon.com/#login)
 
 ### 免费额度（2026-11-28 查询）
 
 | 服务 | 免费额度 | 后续升级 |
 | --- | --- | --- |
-| Supabase | 每月 50,000 活跃用户、500 MB 数据库、1 GB 文件、5 GB 出站流量；最多 2 个活跃免费项目，闲置 1 周会暂停 | Pro 从 $25/月起，保留项目与用户 |
-| Resend | 每月 3,000 封验证码邮件、每天 100 封 | Pro 从 $20/月起，每月 50,000 封 |
+| Supabase | 每月 50,000 活跃用户、500 MB 数据库、1 GB 文件、5 GB 普通出站和 5 GB 缓存出站。最多 2 个活跃免费项目，闲置 1 周会暂停 | Pro 从 $25/月起，保留项目与用户 |
+| Resend | 每团队每月 3,000 封、每天 100 封、最多 3 个发信域名 | Pro 从 $20/月起，每月 50,000 封 |
 
-先选择 Free；域名和已有托管费用另算。**100 封/天是邮件发送次数，不是 100 位用户**，重发、重复登录都会消耗额度。头像文件和流量也有额度限制。升级前以官方最新价格为准：[Supabase](https://supabase.com/pricing)、[Resend](https://resend.com/pricing)。免费项目因闲置暂停后需到控制台恢复。
+Resend 的额度由同一团队下的域名共享。每次实际寄出的注册验证、重置密码或登录验证码邮件都会使用发信额度，重发同样计入。日常使用邮箱和密码登录不会发信。Supabase Free 项目因闲置暂停后可在控制台恢复。域名续费单独管理。[Supabase 套餐](https://supabase.com/pricing) · [Resend 套餐](https://resend.com/pricing)
 
-### 1. 用 GitHub 创建 Supabase 免费项目
+### 生产配置
 
-1. 打开 https://supabase.com/dashboard ，用你自己的 GitHub 账号登录，创建 Free 组织和 NijiEhon 项目，选择适合实际用户访问的地区。
-2. 数据库密码保存在自己的密码管理器，不放入网站或聊天。
-3. 在项目 Connect / Settings → API Keys 找到 **Project URL** 和 **Publishable key**（以 sb_publishable_ 开头）。将两个公开值填入 auth-config.js：
+- **Supabase Authentication → Sign In / Providers** 已启用 Email、允许新用户注册并要求验证邮箱。新密码至少 8 个字符且最多 72 字节。已开启 Secure password change，登录超过 24 小时的会话需要重新登录后再修改密码。**URL Configuration** 的 Site URL 为 `https://nijiehon.com`。[邮箱密码文档](https://supabase.com/docs/guides/auth/passwords) · [邮箱 OTP 文档](https://supabase.com/docs/guides/auth/auth-email-passwordless)
+- **Emails → SMTP Settings** 已启用自定义 SMTP。主机为 `smtp.resend.com`，端口 `465`，用户名 `resend`，密码为上文的专用 Resend 密钥。发件人是 `NijiEhon <login@auth.nijiehon.com>`。[Supabase SMTP 文档](https://supabase.com/docs/guides/auth/auth-smtp) · [Resend SMTP 文档](https://resend.com/docs/send-with-smtp)
+- **Emails → Templates** 的 Confirm sign up、Magic link or OTP 和 Reset password 都使用 `{{ .Token }}` 生成数字验证码，主题分别为「NijiEhon 注册验证码」「NijiEhon 登录验证码」和「NijiEhon 密码重置验证码」。前端接受 6–10 位数字。
+- **Authentication → Rate Limits** 管理服务器端发信和验证限流。排查验证码问题时，同时查看 Supabase Auth 日志、Resend 发送状态和团队额度。
 
-~~~js
-window.NIJI_AUTH_CONFIG = Object.freeze({
-  supabaseUrl: "https://你的项目编号.supabase.co",
-  publishableKey: "sb_publishable_你的公开密钥",
-  emailEnabled: true
-});
-~~~
+### 私有头像存储
 
-4. 只需公开配置出现在前端。service_role / sb_secret_、数据库密码和 SMTP 密钥必须留在对应控制台；代码不接受旧版 JWT anon key，请使用新的 Publishable key。
-5. Supabase → Authentication → Sign In / Providers：启用 Email、允许新用户注册、保留邮箱验证。设置 OTP 有效期（例如 10 分钟）。本网站接受 6–10 位数字验证码。
-6. URL Configuration：本地测试 Site URL 使用 http://127.0.0.1:8001；正式上线改为实际 HTTPS 域名。此实现使用输入验证码的方式，不依赖点击邮件登录链接。
-
-### 2. 配置 Resend 免费发信
-
-1. 在 https://resend.com 注册免费账号，添加你持有的发信域名或子域名（例如 auth.nijiehon.com）。
-2. 按 Resend 控制台给出的记录完成 DNS 验证。使用它实际提供的 SPF/DKIM 等记录，不要凭空复制别人的 DNS 值。
-3. 创建发信 API key。Supabase → Authentication → SMTP Settings 启用自定义 SMTP：host 为 smtp.resend.com、port 为 465、username 为 resend、password 为 Resend API key。发件地址使用已验证域名（如 login@auth.nijiehon.com），发件人名称 NijiEhon。
-4. SMTP 密钥只填 Supabase 控制台，不提交仓库、不放进 auth-config.js。
-5. Supabase → Email Templates：将 **Magic Link** 模板改为验证码邮件，并检查 **Confirm Signup** 模板也包含验证码：
-
-~~~html
-<h2>NijiEhon 登录验证码</h2>
-<p>请输入验证码：<strong>{{ .Token }}</strong></p>
-<p>如果不是你本人发起，请忽略本邮件。</p>
-~~~
-
-6. 使用自己的邮箱测试新用户、已有用户、过期码、重发码以及垃圾邮件投递情况。Resend 未验证域名时不能作为向任意客户发信的正式配置。
-
-Supabase 内置邮件只供测试，默认仅向项目团队成员邮箱发信，每小时 2 封，不能直接向公众开放。官方说明：[SMTP](https://supabase.com/docs/guides/auth/auth-smtp)、[邮箱 OTP](https://supabase.com/docs/guides/auth/auth-email-passwordless)、[Resend SMTP](https://resend.com/docs/send-with-smtp)。
-
-### 3. 启用头像私有存储
-
-在 Supabase SQL Editor 执行 supabase/setup.sql。脚本创建私有 avatars 桶，限制 PNG、1 MB，并用 RLS 限制每位已登录用户只能读写自己的 <user-id>/avatar.png。前端先缩小图片，再上传并更新账号头像版本。不要添加“允许所有人读写”的策略；已有同名桶时检查是否残留其他策略。
+生产项目已创建私有 `avatars` 桶和读取、上传、更新三条 RLS 策略。桶接收不超过 1 MB 的 PNG，每个登录用户只能读写自己的 `<user-id>/avatar.png`。前端会先缩小图片，再上传并更新账号头像版本。需要在新项目复建时，使用 [supabase/setup.sql](supabase/setup.sql)。已有同名桶时先检查其中的访问策略。
 
 Auth user_metadata 只保存头像版本及展示信息，不用于管理员权限或订单授权。退出不会删除云端账号和头像。删除请求由管理员处理，须同时清理 Storage 对象和 Auth 用户，当前没有自助注销界面。
 
 ### 登录状态与页面行为
 
-- 访客：首页显示邮箱输入卡片；个人中心显示默认头像、访客和登录入口。
-- 请求验证码：调用 Supabase，成功后出现验证码输入框；**此时仍未登录**。支持更换邮箱和 60 秒重发冷却，服务端限流独立生效。
-- 验证成功：首次自动注册，已有邮箱直接登录。首页显示欢迎卡片和个人中心入口，个人页显示邮箱、名称与头像，顶栏及页脚同步。
+- 首页默认显示邮箱和密码，并提供注册、验证码登录、找回密码入口。访客进入个人中心时可看到登录按钮。
+- 请求验证码成功后，页面显示验证码输入框。可以更换邮箱，重发间隔为 60 秒，Supabase 仍执行自己的限流设置。
+- 注册验证和验证码登录成功后进入已登录状态。通过找回密码验证后，页面显示新密码表单。首页欢迎卡片、个人中心及导航显示当前账号。
 - 刷新/跨页：SDK 保存和刷新会话，启动时向服务器确认用户，不把旧的本机演示数据当成真实账号。
 - 退出：本浏览器同源标签页同步恢复访客状态，清除页面上的私有头像；其他设备仍可保持登录。
 - 头像：圆形显示，可点击预览和更换，透明 PNG 不铺底色，登录其他设备后也可读取自己的头像。
 - 尚未配置服务、网络异常、验证码错误/过期、发送过于频繁时给出相应提示，不创建虚假的成功状态。
 
-### 上线验收与扩展
+### 上线验收
 
-1. 用真实配置跑通收信 → 验证 → 首页欢迎卡片 → 个人页 → 退出。再验证跨页刷新、两个同源标签页同步退出和关闭浏览器后恢复登录。
-2. 上传透明 PNG，刷新后、另一设备登录后检查头像。用第二个测试账号验证不能读写第一个账号的存储路径。
-3. 面向公众开放前配置 Supabase 服务端发信/验证限流。如启用 Supabase CAPTCHA，需先接入相应前端控件；页面倒计时不是反滥用措施。关注 Resend 每日/每月额度。
-4. 代码仍为静态网站，Supabase 负责身份和私有存储。将来订单、付款或管理员操作必须由服务端验证用户并落实权限，不能依赖前端是否隐藏按钮。
-5. 升级 Supabase 或 Resend 套餐可以保留现有代码与账号；无需为了付费方案重写登录系统。
+- 本次在生产 Supabase 创建了验收账号 `delivered@resend.dev`。注册和登录验证码均通过 Resend 模拟投递，真实网站完成了验证、进入个人中心和退出。[Resend 模拟投递](https://resend.com/changelog/sending-test-emails)
+- 头像桶的私有状态和 RLS 策略已在生产数据库核对。头像上传、跨标签页退出和失效会话已通过模拟接口的浏览器测试。更改存储权限后，用两个测试账号复核各自只能访问自己的头像。
+- 将来接入订单、付款或管理员功能时，由服务端验证身份和执行权限检查。
 
 ### 实现文件与本地检查
 
 - auth-config.js：公开项目配置。
-- auth.js：邮箱 OTP、会话恢复、退出、头像和页面同步，不保存用户密码。
+- auth.js：密码登录、邮箱验证码、密码设置与恢复、会话同步及头像。密码由 Supabase Auth 管理。
 - assets/vendor/supabase-2.119.2.js：固定版本官方 SDK，本地托管；MIT 许可证在同目录 supabase-LICENSE。来源为 @supabase/supabase-js 2.119.2 的 dist/umd/supabase.js。
 - supabase/setup.sql：私有头像桶和 RLS 策略。
 - privacy.html：按邮箱认证和头像存储的实际处理方式更新。
-- tests/auth-browser.cjs：用真实 SDK 与模拟 HTTP 接口检查配置缺失、旧演示拒绝、限流、验证码失败/成功、跨页恢复、双标签退出、头像上传同步、失效会话及手机布局。不发送真实邮件。
+- tests/auth-browser.cjs：用真实 SDK 和模拟 HTTP 接口检查密码登录、旧用户设置密码、注册及重发、验证码登录、密码恢复、会话同步、头像上传和手机布局。
 
 ~~~powershell
 node --check auth.js
@@ -129,12 +124,25 @@ node tests/auth-browser.cjs
 
 本地工作目录为 E:\github\NijiEhon，远程仓库为 https://github.com/JianghaoPeng06/NijiEhon ，main 跟踪 origin/main。无需把文件复制到其他目录，每次修改会直接显示在 GitHub Desktop。
 
-日常更新：
+### 日常部署
 
-1. GitHub Desktop 选择 NijiEhon；先 Fetch origin，有远程更新时先 Pull。
+1. 在 GitHub Desktop 选择 NijiEhon，先 Fetch origin，有远程更新再 Pull。
 2. 修改此目录的文件，查看 Changes，确认没有加入密钥或临时文件。
 3. 填写 Summary → Commit to main → Push origin。
-4. 发布到网站取决于当前托管平台的 Git 集成；仓库推送和 GitHub Release 不等于修改 DNSSEC，也不会自动配置 Supabase。
+4. Cloudflare Pages 对 `main` 已开启生产自动部署。去 Deployments 核对提交和结果，再访问正式域名。生产邮箱登录由提交 `950a54a` 推送后自动上线。[Pages 设置](https://dash.cloudflare.com/1abaa82b108729621cc731ab27be8d88/pages/view/nijiehon/settings) · [部署记录](https://dash.cloudflare.com/1abaa82b108729621cc731ab27be8d88/pages/view/nijiehon/d81815f3-d170-4545-9887-c3db3da52ccb)
+
+Pages 的 Framework preset 为 `None`，使用仓库根目录，Build output directory 为 `dist`。构建命令发布根目录的 HTML、CSS、JavaScript 和整个 `assets` 目录。
+
+~~~sh
+mkdir -p dist && cp -- *.html *.css *.js dist/ && cp -R assets dist/
+~~~
+
+### 缓存与排查
+
+- Cloudflare 的 Caching Level 为 `Standard`，Browser Cache TTL 为 `Respect Existing Headers`，与 `jasperpeng.uk` 的设置一致。此前的 CSS/JavaScript 专用缓存规则已停用。主域名和 `www` 的页面、CSS、JavaScript、图片和字体实测均返回 `max-age=0, must-revalidate`。浏览器再次使用资源时会重新验证，未变更的资源可从本地缓存复用。[Cloudflare 缓存设置](https://dash.cloudflare.com/1abaa82b108729621cc731ab27be8d88/nijiehon.com/caching/configuration) · [Browser Cache TTL 说明](https://developers.cloudflare.com/cache/how-to/edge-browser-cache-ttl/)
+- 浏览器若还保留以前的 4 小时缓存，可按一次 `Ctrl+F5`。网页缺样式或内页回到首页时，先查 Pages 的构建产物，再请求 `/style.css` 和 `/auth-config.js` 确认分别返回 CSS 和 JavaScript。
+
+### 正式版本
 
 正式发新版本：更新 VERSION、各页面页脚版本及 RELEASE_NOTES.md，运行 node scripts/check.cjs，再提交。GitHub Desktop 的 History 中右键目标提交 → Create Tag，输入如 v0.1.1，然后 Push origin（推送标签）。启用且允许运行 GitHub Actions 时，release.yml 可在版本标签推送后检查并创建同名 GitHub Release；若 Actions 未启动，到 GitHub → Releases → Draft a new release，选择已推送的标签，填写 RELEASE_NOTES.md 的内容并发布。普通修改只推送 main，不会每次都创建 Release。v0.1.0 的代码和标签已通过 GitHub Desktop 推送，Release 通过 GitHub 发布页完成。
 
