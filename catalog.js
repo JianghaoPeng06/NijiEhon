@@ -72,7 +72,7 @@ export const catalog = [
   {
     "slug": "google-account",
     "title": "Google 账号注册",
-    "image": "assets/content/51815e1d2a8823128d77647caabea6f7d7a29971e3e307911e64ad2c1fe923bf.jpg",
+    "image": "assets/content/a239773e585d3c32b3818597ab0bc6e4067d77635cdcf9937544f6695e3faa52.jpg",
     "status": "published",
     "sample": false,
     "options": [
@@ -93,7 +93,7 @@ export const catalog = [
   {
     "slug": "ai-account",
     "title": "AI 账号注册",
-    "image": "assets/content/6c8863a545ba2d2d4ec8bdf89bd2804a61d3b6fdcc2c62cf284a98457141c608.jpg",
+    "image": "assets/content/974299ed4d9e17f6ea8aa5a19fe6afafdde19fdccf2961fec9459cd3ef412ab5.png",
     "status": "published",
     "sample": false,
     "options": [
