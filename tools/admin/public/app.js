@@ -4,8 +4,6 @@ const filter = get('#filter');
 const records = get('#records');
 const notice = get('#status');
 const generate = get('#generate');
-const deploy = get('#deploy');
-const modal = get('#deploy-dialog');
 let state;
 let tab = 'products';
 let selected;
@@ -221,7 +219,7 @@ function draw() {
     else form.elements.weight.value = '3';
     for (const option of form.elements.status.options) option.textContent = labels[tab][option.value];
     if (article) {
-      get('#timezone').textContent = `本机时区 ${Intl.DateTimeFormat().resolvedOptions().timeZone}。到点后可部署。`;
+      get('#timezone').textContent = `本机时区 ${Intl.DateTimeFormat().resolvedOptions().timeZone}。到点后可生成并发布。`;
       inputOptions('#authors', state.data.articles.map(item => item.author));
       for (const product of state.data.products) {
         const label = document.createElement('label');
@@ -279,29 +277,25 @@ function draw() {
 
 function setBusy(active) {
   busy = active;
-  generate.disabled = deploy.disabled = active || !state;
+  generate.disabled = active || !state;
   document.querySelectorAll('[data-tab], #new, #editor button[type=submit]').forEach(button => { button.disabled = active; });
   if (state) drawList();
 }
 
-function ready() {
-  if (busy) return false;
-  if (!dirty) return true;
-  flash('请先保存当前修改。', true);
-  return false;
-}
-
-async function publish(action) {
-  if (!ready()) return;
+async function generateSite() {
+  if (busy) return;
+  if (dirty) {
+    flash('请先保存当前修改。', true);
+    return;
+  }
   setBusy(true);
-  flash(action === 'generate' ? '正在生成并检查页面…' : '正在同步 GitHub 并发布…');
+  flash('正在生成并检查页面…');
   clearTimeout(noticeTimer);
   try {
-    const result = await post(action);
+    const { files } = await post('generate');
     state = await api('state');
-    const message = action === 'generate' ? (result.files.length ? `已生成并检查 ${result.files.length} 个文件。` : '检查通过，生成文件已是最新。') :
-      result.pushed ? `已推送 ${result.commit.slice(0, 7)}。Cloudflare Pages 将开始部署。` : 'GitHub 已包含当前内容，无需推送。';
-    flash(message);
+    const summary = files.length ? `已生成并检查 ${files.length} 个文件。` : '检查通过，生成文件已是最新。';
+    flash(`${summary}请在 GitHub Desktop 审核改动，提交后推送。`);
   } catch (error) {
     flash(error.message, true);
   } finally {
@@ -325,17 +319,10 @@ get('#new').onclick = () => {
   get('[name=title]').focus();
 };
 filter.oninput = drawList;
-generate.onclick = () => publish('generate');
-deploy.onclick = () => {
-  if (ready()) {
-    modal.returnValue = '';
-    modal.showModal();
-  }
-};
-modal.onclose = () => { if (modal.returnValue === 'deploy') publish('deploy'); };
+generate.onclick = generateSite;
 window.addEventListener('beforeunload', event => { if (dirty) event.preventDefault(); });
 window.addEventListener('keydown', event => {
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's' && get('#editor') && !busy && !modal.open) {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's' && get('#editor') && !busy) {
     event.preventDefault();
     get('#editor').requestSubmit();
   }

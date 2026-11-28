@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NijiEhon 后台</title>
+  <link rel="icon" type="image/png" href="/preview/assets/favicon.png">
   <link rel="stylesheet" href="/preview/assets/fonts.css">
   <link rel="stylesheet" href="/admin.css">
   <script type="module" src="/app.js"></script>
@@ -13,8 +14,7 @@
     <div class="brand"><span class="brand-mark" aria-hidden="true"><span>𒀭</span></span><div><strong>NijiEhon</strong><span>网站后台</span></div></div>
     <div class="top-actions">
       <a class="button secondary" href="/preview/" target="_blank" rel="noopener">预览网站</a>
-      <button class="secondary" id="generate" type="button" disabled>生成网站</button>
-      <button class="primary" id="deploy" type="button" disabled>部署</button>
+      <button class="primary" id="generate" type="button" disabled>生成网站</button>
     </div>
   </header>
   <div class="workspace">
@@ -35,13 +35,6 @@
     <main id="main"><p class="placeholder">正在读取内容…</p></main>
   </div>
   <p id="status" class="status" role="status" hidden></p>
-  <dialog id="deploy-dialog">
-    <form method="dialog">
-      <h2>部署到生产站</h2>
-      <p>生成并提交可发布的内容，推送到 GitHub 的 main 分支。Cloudflare Pages 会在推送后开始构建。</p>
-      <div class="dialog-actions"><button class="secondary" value="cancel">取消</button><button class="primary" value="deploy">生成并推送</button></div>
-    </form>
-  </dialog>
   <template id="image-field">
     <fieldset class="image-field">
       <legend></legend>

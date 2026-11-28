@@ -1,9 +1,8 @@
 import { randomUUID, createHash } from 'node:crypto';
-import { execFile, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { collections, detail, imagePath, normalizePoster, normalizeRecord, render, route, snapshot } from './content.mjs';
 
@@ -17,12 +16,10 @@ const origin = `http://127.0.0.1:${port}`;
 const hash = content => createHash('sha256').update(content).digest('hex');
 const json = data => `${JSON.stringify(data, null, 2)}\n`;
 const readSite = file => readFileSync(path.join(root, file), 'utf8').replaceAll('\r\n', '\n');
-const currentTime = () => Date.now();
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.woff2': 'font/woff2' };
 const adminFiles = new Map([['/', 'index.html'], ['/app.js', 'app.js'], ['/admin.css', 'admin.css']]);
 const publicPath = /^(?:[a-z0-9-]+\.(?:html|css|js)|assets\/(?:[a-z0-9_-]+\/)*[a-zA-Z0-9_.-]+\.(?:js|css|jpg|png|webp|woff2))$/;
 const retiredPath = /^(?:product|guide)-[a-z0-9]+(?:-[a-z0-9]+)*\.html$/;
-const sharedFiles = ['index.html', 'products.html', 'research.html', 'site.js'];
 
 function published() {
   const text = readSite(publishedPath);
@@ -62,18 +59,19 @@ function verifyImage(image) {
   if (image && !existsSync(asset(image))) throw new Error('图片文件不存在，请重新选择。');
 }
 
-function plan(saved, now = currentTime()) {
-  const data = snapshot(saved.data, published().data, now);
+function buildFiles(saved) {
+  const data = snapshot(saved.data, published().data);
   const files = render(data, readSite);
   for (const image of new Set([data.poster.image, ...collections.flatMap(collection => data[collection].map(item => item.image))])) {
     verifyImage(image);
     if (image.startsWith('assets/content/')) files.set(image, readFileSync(asset(image)));
   }
   files.set(publishedPath, json(data));
-  return { data, files };
+  return files;
 }
 
-function generate(saved, { files } = plan(saved)) {
+function generate(saved) {
+  const files = buildFiles(saved);
   const changed = [];
   try {
     for (const [name, contents] of files) {
@@ -94,51 +92,6 @@ function generate(saved, { files } = plan(saved)) {
     }
     throw new Error(`生成未完成。${error.stderr?.toString().trim().split('\n')[0] || error.message}`);
   }
-}
-
-const exec = promisify(execFile);
-async function git(...args) {
-  const result = await exec('git', args, { cwd: root, windowsHide: true, timeout: 60000, maxBuffer: 2 ** 20, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } });
-  return result.stdout;
-}
-
-const scaffold = text => text.replaceAll('\r\n', '\n')
-  .replace(/<!-- BEGIN ADMIN: ([a-z-]+) -->[\s\S]*?<!-- END ADMIN: \1 -->/g, '$1')
-  .replace(/^  \/\/ BEGIN ADMIN: search\n[\s\S]*?^  \/\/ END ADMIN: search$/m, 'search');
-
-async function deploy(saved) {
-  if ((await git('branch', '--show-current')).trim() !== 'main') throw new Error('请切换到 main，再发布内容。');
-  const remotes = (await git('remote', 'get-url', '--push', '--all', 'origin')).trim().split(/\r?\n/);
-  if (remotes.length !== 1 || !/^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)JianghaoPeng06\/NijiEhon(?:\.git)?\/?$/i.test(remotes[0])) throw new Error('origin 须指向 NijiEhon 的 GitHub 仓库。');
-  if ((await git('diff', '--cached', '--name-only')).trim()) throw new Error('请先在 GitHub Desktop 处理已暂存文件，再从后台发布。');
-  const planned = plan(saved);
-  const allowed = new Set(planned.files.keys());
-  const changed = (await git('status', '--porcelain=v1', '-z', '--no-renames', '--untracked-files=all')).split('\0').filter(Boolean).map(line => line.slice(3));
-  if (changed.some(name => !allowed.has(name))) throw new Error('工作区有后台管理范围外的更改。请先在 GitHub Desktop 审核并推送这些更改。');
-  const lastGenerated = render(published().data, readSite);
-  if (changed.some(name => retiredPath.test(name) && readSite(name) !== lastGenerated.get(name))) throw new Error('商品或文章页面有手动更改。请先在 GitHub Desktop 审核。');
-  await git('fetch', '--no-tags', 'origin', 'refs/heads/main');
-  const remote = (await git('rev-parse', 'FETCH_HEAD')).trim();
-  const base = (await git('merge-base', remote, 'HEAD')).trim();
-  if (base !== remote) throw new Error('远程 main 有新提交。请先同步，再重新发布。');
-  const pending = (await git('log', '--format=', '--name-only', '-z', `${remote}..HEAD`)).split('\0').map(name => name.trim()).filter(Boolean);
-  if (pending.some(name => !allowed.has(name))) throw new Error('本地尚未推送的提交含其他改动。请先在 GitHub Desktop 审核并推送。');
-  for (const name of sharedFiles) {
-    if (scaffold(readSite(name)) !== scaffold(await git('show', `${remote}:${name}`))) throw new Error('公共页面或脚本有手动更改。请先在 GitHub Desktop 审核并推送。');
-  }
-  const generated = generate(saved, planned);
-  const status = (await git('status', '--porcelain=v1', '-z', '--no-renames', '--untracked-files=all')).split('\0').filter(Boolean);
-  if (status.some(line => !allowed.has(line.slice(3)) || line[0] !== ' ' && !line.startsWith('?? '))) throw new Error('发布期间工作区出现了其他更改。请在 GitHub Desktop 审核。');
-  const paths = status.map(line => line.slice(3));
-  if (paths.length) {
-    await git('add', '--', ...paths);
-    if ((await git('diff', '--cached', '--name-only', '-z')).split('\0').filter(Boolean).some(name => !paths.includes(name))) throw new Error('暂存区出现了其他更改。请在 GitHub Desktop 审核。');
-    await git('commit', '--only', '-m', 'Publish NijiEhon content', '--', ...paths);
-  }
-  const commit = (await git('rev-parse', 'HEAD')).trim();
-  if (commit === remote) return { commit, changed: generated.length, pushed: false };
-  await git('push', 'origin', `${commit}:refs/heads/main`);
-  return { commit, changed: generated.length, pushed: true };
 }
 
 async function readBody(request, limit) {
@@ -175,7 +128,7 @@ function preview(response, url, file) {
   if (!publicPath.test(file)) return send(response, 404, 'text/plain; charset=utf-8', '找不到页面或文件。');
   if (!file.endsWith('.html') && file !== 'site.js') return staticFile(response, imagePath.test(file) ? asset(file) : path.join(root, file));
   const saved = state();
-  const data = snapshot(saved.data, published().data, currentTime());
+  const data = snapshot(saved.data, published().data);
   if (url.searchParams.has('draft') && retiredPath.test(file)) {
     const collection = file.startsWith('product-') ? 'products' : 'articles';
     const item = saved.data[collection].find(record => route(collection, record.slug) === file);
@@ -187,7 +140,6 @@ function preview(response, url, file) {
   return staticFile(response, path.join(root, file));
 }
 
-let busy = false;
 async function handle(request, response) {
   if (request.headers.host !== `127.0.0.1:${port}`) return sendJson(response, 403, { error: '请使用后台打印的本机地址。' });
   const url = new URL(request.url, origin);
@@ -197,7 +149,7 @@ async function handle(request, response) {
     if (endpoint === '/api/state') return sendJson(response, 200, state());
     if (endpoint.startsWith('/preview/')) return preview(response, url, endpoint.slice(9) || 'index.html');
   }
-  if (request.method !== 'POST' || !endpoint.startsWith('/api/')) return sendJson(response, 404, { error: '找不到此操作。' });
+  if (request.method !== 'POST' || !['/api/upload', '/api/save', '/api/generate'].includes(endpoint)) return sendJson(response, 404, { error: '找不到此操作。' });
   if (request.headers.origin !== origin) return sendJson(response, 403, { error: '请从后台页面操作。' });
   if (endpoint === '/api/upload') {
     const bytes = await readBody(request, 10 * 1024 * 1024);
@@ -206,7 +158,6 @@ async function handle(request, response) {
     return sendJson(response, 201, { image: `assets/content/${name}` });
   }
   const payload = JSON.parse((await readBody(request, 256 * 1024)).toString());
-  if (busy) return sendJson(response, 409, { error: '发布正在进行，请稍后重试。' });
   const saved = state();
   if (payload.revision !== saved.revision) return sendJson(response, 409, { error: '内容已在其他窗口修改。请复制未保存的文字，刷新后继续。' });
   if (endpoint === '/api/save') {
@@ -228,16 +179,7 @@ async function handle(request, response) {
     atomicWrite(draftFile, json(saved));
     return sendJson(response, 200, saved);
   }
-  if (endpoint === '/api/generate') return sendJson(response, 200, { files: generate(saved) });
-  if (endpoint === '/api/deploy') {
-    busy = true;
-    try {
-      return sendJson(response, 200, await deploy(saved));
-    } finally {
-      busy = false;
-    }
-  }
-  return sendJson(response, 404, { error: '找不到此操作。' });
+  return sendJson(response, 200, { files: generate(saved) });
 }
 
 if (process.argv.includes('--generate')) {
@@ -245,8 +187,7 @@ if (process.argv.includes('--generate')) {
 } else {
   const server = createServer((request, response) => {
     handle(request, response).catch(error => {
-      const detail = error.code === 'ETIMEDOUT' || error.killed ? 'Git 操作超时，请检查连接后重试。' : error.stderr ? `Git 操作失败。${String(error.stderr).trim()}` : error.message;
-      if (!response.headersSent) sendJson(response, 400, { error: detail });
+      if (!response.headersSent) sendJson(response, 400, { error: error.message });
       else response.end();
     });
   });

@@ -11,32 +11,52 @@ if ($CreateShortcut) {
     $shortcut.TargetPath = Join-Path $PSHOME 'powershell.exe'
     $shortcut.Arguments = '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}"' -f $PSCommandPath
     $shortcut.WorkingDirectory = $PSScriptRoot
-    $shortcut.IconLocation = "$env:SystemRoot\System32\imageres.dll,14"
+    $icon = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\assets\favicon.ico'))
+    $shortcut.IconLocation = "$icon,0"
     $shortcut.Description = 'NijiEhon website administration'
     $shortcut.Save()
     Write-Output $shortcutPath
     return
 }
 
-$node = (Get-Command node.exe).Source
 $adminPort = if ($env:NIJIEHON_ADMIN_PORT) { [int]$env:NIJIEHON_ADMIN_PORT } else { 5621 }
 $url = "http://127.0.0.1:$adminPort/"
 
 function Test-Admin {
     try {
-        $result = Invoke-RestMethod -Uri ($url + 'api/state') -TimeoutSec 1
-        return $null -ne $result.revision
+        $result = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 1
+        return $result.Content -match 'id="generate"'
     }
     catch { return $false }
 }
 
-if (-not (Test-Admin)) {
-    $server = Start-Process -FilePath $node -ArgumentList 'server.mjs' -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -PassThru
-    for ($i = 0; $i -lt 30; $i++) {
-        if (Test-Admin) { break }
-        if ($server.HasExited) { throw 'Could not start the admin server. Run node tools/admin/server.mjs for details.' }
-        Start-Sleep -Milliseconds 150
+try {
+    $locations = @(${env:ProgramFiles(x86)}, $env:ProgramFiles, $env:LOCALAPPDATA) | Where-Object { $_ }
+    $browser = foreach ($executable in 'Microsoft\Edge\Application\msedge.exe', 'Google\Chrome\Application\chrome.exe') {
+        foreach ($location in $locations) {
+            $candidate = Join-Path $location $executable
+            if (Test-Path -LiteralPath $candidate -PathType Leaf) { $candidate }
+        }
     }
-    if (-not (Test-Admin)) { throw 'The admin server did not respond. Run node tools/admin/server.mjs for details.' }
+    $appBrowser = $browser | Select-Object -First 1
+    if (-not $appBrowser) { throw 'Install Microsoft Edge or Google Chrome to open the desktop window.' }
+
+    if (-not (Test-Admin)) {
+        $node = Get-Command node.exe -ErrorAction SilentlyContinue
+        if (-not $node) { throw 'Install Node.js 22 LTS or later to run NijiEhon Admin.' }
+        $server = Start-Process -FilePath $node.Source -ArgumentList 'server.mjs' -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -PassThru
+        for ($i = 0; $i -lt 30; $i++) {
+            if (Test-Admin) { break }
+            if ($server.HasExited) { throw 'Could not start the admin server. Run node tools/admin/server.mjs for details.' }
+            Start-Sleep -Milliseconds 150
+        }
+        if (-not (Test-Admin)) { throw 'The admin server did not respond. Run node tools/admin/server.mjs for details.' }
+    }
+
+    Start-Process -FilePath $appBrowser -ArgumentList "--app=$url", '--window-size=1500,960'
 }
-Start-Process $url
+catch {
+    Add-Type -AssemblyName PresentationFramework
+    [System.Windows.MessageBox]::Show($_.Exception.Message, 'NijiEhon Admin') | Out-Null
+    exit 1
+}
