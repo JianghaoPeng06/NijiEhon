@@ -1,0 +1,140 @@
+{
+  "poster": {
+    "image": "assets/station.jpg",
+    "alt": "大阪站建筑外景",
+    "position": "center"
+  },
+  "products": [
+    {
+      "slug": "0",
+      "title": "美国 Ultra Mobile 电话卡",
+      "summary": "先核对设备兼容性、激活地点和保号条件。",
+      "body": "",
+      "image": "assets/placeholders/product-ultra.jpg",
+      "imageAlt": "",
+      "keywords": "SIM 美国 手机卡",
+      "weight": 4,
+      "status": "published",
+      "region": "美国",
+      "category": "通信",
+      "url": "https://www.ultramobile.com/paygo/",
+      "currency": "CNY",
+      "priceMode": "hidden",
+      "price": "",
+      "unit": ""
+    },
+    {
+      "slug": "1",
+      "title": "英国 giffgaff 电话卡",
+      "summary": "按使用地点核对漫游、通话及流量条件。",
+      "body": "",
+      "image": "assets/placeholders/product-giffgaff.jpg",
+      "imageAlt": "",
+      "keywords": "SIM 英国 手机卡",
+      "weight": 3,
+      "status": "published",
+      "region": "英国",
+      "category": "通信",
+      "url": "https://www.giffgaff.com/",
+      "currency": "CNY",
+      "priceMode": "hidden",
+      "price": "",
+      "unit": ""
+    },
+    {
+      "slug": "2",
+      "title": "Apple 账户",
+      "summary": "了解账户地区、恢复方式与付款资料。",
+      "body": "",
+      "image": "assets/placeholders/product-apple.jpg",
+      "imageAlt": "",
+      "keywords": "苹果 Apple ID",
+      "weight": 2,
+      "status": "published",
+      "region": "多地区",
+      "category": "账户",
+      "url": "https://account.apple.com/",
+      "currency": "CNY",
+      "priceMode": "hidden",
+      "price": "",
+      "unit": ""
+    },
+    {
+      "slug": "3",
+      "title": "云服务器",
+      "summary": "按访问地点、预算和备份需求选择配置。",
+      "body": "",
+      "image": "assets/placeholders/product-cloud.jpg",
+      "imageAlt": "",
+      "keywords": "VPS 云主机",
+      "weight": 1,
+      "status": "published",
+      "region": "多地区",
+      "category": "工具",
+      "url": "https://www.digitalocean.com/products/droplets",
+      "currency": "CNY",
+      "priceMode": "hidden",
+      "price": "",
+      "unit": ""
+    }
+  ],
+  "articles": [
+    {
+      "slug": "0",
+      "title": "第一次选择海外号码",
+      "summary": "",
+      "body": "列出需要通话、收短信和使用流量的地点。核对运营商覆盖，再比较激活要求、漫游费和号码有效期。",
+      "image": "assets/placeholders/guide-number.jpg",
+      "imageAlt": "",
+      "keywords": "电话卡 SIM 美国 英国",
+      "weight": 4,
+      "status": "published",
+      "author": "NijiEhon",
+      "date": "2026-11-27T16:00:00.000Z",
+      "read": null,
+      "pinned": false,
+      "related": [
+        "0",
+        "1"
+      ]
+    },
+    {
+      "slug": "1",
+      "title": "收到 SIM 卡后如何开始",
+      "summary": "",
+      "body": "保留卡套，通过官方入口核对激活步骤。完成后先测试短信与通话，再把号码绑定到常用账户。",
+      "image": "assets/placeholders/guide-activation.jpg",
+      "imageAlt": "",
+      "keywords": "电话卡 激活",
+      "weight": 3,
+      "status": "published",
+      "author": "NijiEhon",
+      "date": "2026-11-27T16:00:00.000Z",
+      "read": null,
+      "pinned": false,
+      "related": [
+        "0",
+        "1"
+      ]
+    },
+    {
+      "slug": "2",
+      "title": "开通云服务器前的准备",
+      "summary": "",
+      "body": "确认机房、系统和预算。在创建实例前查看流量、快照和闲置资源的收费方式，同时准备 SSH 公钥。",
+      "image": "assets/placeholders/guide-cloud.jpg",
+      "imageAlt": "",
+      "keywords": "服务器 VPS",
+      "weight": 2,
+      "status": "published",
+      "author": "NijiEhon",
+      "date": "2026-11-27T16:00:00.000Z",
+      "read": null,
+      "pinned": false,
+      "related": [
+        "3"
+      ]
+    }
+  ],
+  "retired": []
+}

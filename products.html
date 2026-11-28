@@ -38,31 +38,33 @@
 <main>
 <h1>产品</h1>
 <p>按地区和用途找到适合你的数字产品。</p>
+<!-- BEGIN ADMIN: catalog -->
 <fieldset data-filter="region">
 <legend>使用地区</legend>
-<button aria-pressed="true">全部</button>
-<button aria-pressed="false">美国</button>
-<button aria-pressed="false">英国</button>
-<button aria-pressed="false">多地区</button>
+<button type="button" aria-pressed="true">全部</button>
+<button type="button" aria-pressed="false">美国</button>
+<button type="button" aria-pressed="false">英国</button>
+<button type="button" aria-pressed="false">多地区</button>
 </fieldset>
 <fieldset data-filter="category">
 <legend>产品分类</legend>
-<button aria-pressed="true">全部</button>
-<button aria-pressed="false">通信</button>
-<button aria-pressed="false">账户</button>
-<button aria-pressed="false">工具</button>
+<button type="button" aria-pressed="true">全部</button>
+<button type="button" aria-pressed="false">通信</button>
+<button type="button" aria-pressed="false">账户</button>
+<button type="button" aria-pressed="false">工具</button>
 </fieldset>
 <div class="grid">
 <a class="tile" href="product-0.html" data-region="美国" data-category="通信">
-<img class="cover photo-placeholder" src="assets/placeholders/product-ultra.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">美国 Ultra Mobile 电话卡</a>
+<img class="cover" src="assets/placeholders/product-ultra.jpg" alt="" loading="lazy" decoding="async"><span>美国 Ultra Mobile 电话卡</span></a>
 <a class="tile" href="product-1.html" data-region="英国" data-category="通信">
-<img class="cover photo-placeholder" src="assets/placeholders/product-giffgaff.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">英国 giffgaff 电话卡</a>
+<img class="cover" src="assets/placeholders/product-giffgaff.jpg" alt="" loading="lazy" decoding="async"><span>英国 giffgaff 电话卡</span></a>
 <a class="tile" href="product-2.html" data-region="多地区" data-category="账户">
-<img class="cover photo-placeholder" src="assets/placeholders/product-apple.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">Apple 账户</a>
+<img class="cover" src="assets/placeholders/product-apple.jpg" alt="" loading="lazy" decoding="async"><span>Apple 账户</span></a>
 <a class="tile" href="product-3.html" data-region="多地区" data-category="工具">
-<img class="cover photo-placeholder" src="assets/placeholders/product-cloud.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">云服务器</a>
+<img class="cover" src="assets/placeholders/product-cloud.jpg" alt="" loading="lazy" decoding="async"><span>云服务器</span></a>
 </div>
 <p id="empty" hidden>当前组合暂无产品。</p>
+<!-- END ADMIN: catalog -->
 </main>
 <footer id="footer" aria-label="页脚">
 <nav class="footer-crumb" aria-label="当前位置"><a href="index.html">首页</a> / <span aria-current="page">产品</span></nav>

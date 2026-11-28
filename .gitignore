@@ -19,3 +19,4 @@ Thumbs.db
 .desktop-*.png
 .avatar-*.png
 test-results/
+/tools/admin/.local/

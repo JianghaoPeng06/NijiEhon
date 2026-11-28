@@ -321,6 +321,11 @@ main > section[id], #login { scroll-margin-top: 8rem }
 article { max-width: 44rem; margin: clamp(1rem, 3vw, 3rem) auto }
 article h1 { margin-block: .625rem 1.375rem }
 article p { max-width: none; line-height: 1.8 }
+.content-cover { display: block; width: 100%; max-height: 28rem; object-fit: cover; border-radius: var(--card-radius); margin-block: 1.5rem }
+.content-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-block: 1.5rem }
+.content-price { color: var(--muted); font-weight: 600 }
+.content-body blockquote { border-inline-start: 3px solid var(--line, #dedee2); padding-inline-start: 1rem; margin-inline: 0 }
+.content-placeholder { background: var(--surface, #f3f3f5) }
 fieldset { min-width: 0; border: 0; padding: 0; margin: 1.25rem 0 }
 legend { margin-bottom: .5rem; color: var(--muted); font-weight: 550 }
 fieldset button { margin: 0 .25rem .375rem 0; padding-inline: .875rem; font-size: .9375rem }

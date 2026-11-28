@@ -134,13 +134,15 @@ if ("IntersectionObserver" in window) {
 // Shared search dialog keeps visitors on the page until they choose a result.
 const searchTrigger = header.querySelector(".search");
 const searchItems = [
-  ["guide-0.html", "第一次选择海外号码", "指南", "电话卡 SIM 美国 英国"],
-  ["guide-1.html", "收到 SIM 卡后如何开始", "指南", "电话卡 激活"],
-  ["guide-2.html", "开通云服务器前的准备", "指南", "服务器 VPS"],
-  ["product-0.html", "美国 Ultra Mobile 电话卡", "产品", "SIM 美国 手机卡"],
-  ["product-1.html", "英国 giffgaff 电话卡", "产品", "SIM 英国 手机卡"],
-  ["product-2.html", "Apple 账户", "产品", "苹果 Apple ID"],
-  ["product-3.html", "云服务器", "产品", "VPS 云主机"],
+  // BEGIN ADMIN: search
+  ["guide-0.html","第一次选择海外号码","指南","电话卡 SIM 美国 英国 NijiEhon"],
+  ["guide-1.html","收到 SIM 卡后如何开始","指南","电话卡 激活 NijiEhon"],
+  ["guide-2.html","开通云服务器前的准备","指南","服务器 VPS NijiEhon"],
+  ["product-0.html","美国 Ultra Mobile 电话卡","产品","SIM 美国 手机卡 先核对设备兼容性、激活地点和保号条件。 通信 美国"],
+  ["product-1.html","英国 giffgaff 电话卡","产品","SIM 英国 手机卡 按使用地点核对漫游、通话及流量条件。 通信 英国"],
+  ["product-2.html","Apple 账户","产品","苹果 Apple ID 了解账户地区、恢复方式与付款资料。 账户 多地区"],
+  ["product-3.html","云服务器","产品","VPS 云主机 按访问地点、预算和备份需求选择配置。 工具 多地区"],
+  // END ADMIN: search
   ["terms.html", "服务条款", "关于", "购买 开通 售后"],
   ["privacy.html", "隐私政策", "关于", "邮箱 会话存储 搜索"],
   ["statement.html", "声明", "关于", "地区 价格 官方"]
