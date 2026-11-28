@@ -1,4 +1,23 @@
+param([switch]$CreateShortcut)
+
 $ErrorActionPreference = 'Stop'
+
+if ($CreateShortcut) {
+    $desktop = [Environment]::GetFolderPath([Environment+SpecialFolder]::DesktopDirectory)
+    if (-not (Test-Path -LiteralPath $desktop -PathType Container)) { throw 'Windows Desktop folder is unavailable.' }
+    $shortcutPath = Join-Path $desktop "NijiEhon $([char]0x540E)$([char]0x53F0).lnk"
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = Join-Path $PSHOME 'powershell.exe'
+    $shortcut.Arguments = '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "{0}"' -f $PSCommandPath
+    $shortcut.WorkingDirectory = $PSScriptRoot
+    $shortcut.IconLocation = "$env:SystemRoot\System32\imageres.dll,14"
+    $shortcut.Description = 'NijiEhon website administration'
+    $shortcut.Save()
+    Write-Output $shortcutPath
+    return
+}
+
 $node = (Get-Command node.exe).Source
 $adminPort = if ($env:NIJIEHON_ADMIN_PORT) { [int]$env:NIJIEHON_ADMIN_PORT } else { 5621 }
 $url = "http://127.0.0.1:$adminPort/"

@@ -38,7 +38,7 @@ nijiehon.com 的国际数字生活网站，使用原生多页 HTML、CSS 和 Jav
 
 ## 本地内容后台
 
-双击 [打开后台.cmd](tools/admin/打开后台.cmd)，或运行 `node tools/admin/server.mjs`。用浏览器访问 [NijiEhon 后台](http://127.0.0.1:5621/)，可以管理商品、文章和首页海报，再预览、生成并部署网站。[后台使用说明](tools/admin/README.md)
+双击 [打开后台.cmd](tools/admin/打开后台.cmd)，或运行 `node tools/admin/server.mjs`。Windows 可双击 [创建桌面快捷方式.cmd](tools/admin/创建桌面快捷方式.cmd) 安装桌面入口。用浏览器访问 [NijiEhon 后台](http://127.0.0.1:5621/)，可以管理商品、文章和首页海报，再预览、生成并部署网站。换电脑、草稿迁移和代码维护见 [后台使用说明](tools/admin/README.md)。
 
 ## 页面和跳转
 
