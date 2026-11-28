@@ -6,7 +6,7 @@ const root = path.resolve(__dirname, '..');
 const version = fs.readFileSync(path.join(root, 'VERSION'), 'utf8').trim();
 assert(/^\d+\.\d+\.\d+$/.test(version), 'VERSION must be semantic x.y.z');
 if (process.env.GITHUB_REF_TYPE === 'tag') assert.equal(process.env.GITHUB_REF_NAME, 'v' + version, 'Tag must match VERSION');
-for (const file of ['site.js', 'product.js', 'auth.js', 'auth-config.js', 'clock.js', 'tests/auth-browser.cjs']) {
+for (const file of ['site.js', 'favorites.js', 'media.js', 'product.js', 'shop.js', 'cart.js', 'address.js', 'catalog.js', 'auth.js', 'auth-config.js', 'clock.js', 'tests/auth-browser.cjs']) {
   execFileSync(process.execPath, ['--check', path.join(root, file)]);
 }
 const pages = fs.readdirSync(root).filter(file => file.endsWith('.html'));

@@ -1,4 +1,5 @@
-import { articleSlug, articleSlugs } from './slug.js';
+import { articleSlug, contentSlugs } from './slug.js';
+import { fulfillmentLabels } from './purchase-options.js';
 
 const get = selector => document.querySelector(selector);
 const main = get('#main');
@@ -6,6 +7,13 @@ const filter = get('#filter');
 const records = get('#records');
 const notice = get('#status');
 const generate = get('#generate');
+const save = get('#save');
+const previewPanel = get('#preview');
+const previewFrame = previewPanel.querySelector('iframe');
+const previewStage = get('.preview-stage');
+const previewViewport = get('.preview-viewport');
+const previewModes = [...previewPanel.querySelectorAll('[data-preview-width]')];
+let previewWidth = Number(previewModes[0].dataset.previewWidth);
 let state;
 let tab = 'products';
 let selected;
@@ -53,18 +61,33 @@ function drawList() {
   if (!names[tab]) return;
   const all = state.data[tab];
   get('#list-title').textContent = `${names[tab]} · ${all.length}`;
+  get('#new').textContent = tab === 'articles' ? '＋ 写新文章' : '＋ 新建商品';
   const term = filter.value.trim().toLowerCase();
-  const list = all.filter(item => [item.title, item.author, ...(item.tags || [])].filter(Boolean).some(value => value.toLowerCase().includes(term))).map(item => {
+  const list = all.filter(item => [item.title, item.author, item.keywords, item.category, ...(item.tags || [])].filter(Boolean).some(value => value.toLowerCase().includes(term))).map(item => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'record';
     button.disabled = busy;
     if (item.slug === selected) button.setAttribute('aria-current', 'true');
     const title = document.createElement('span');
+    title.className = 'record-title';
     title.textContent = item.title;
     const subtitle = document.createElement('small');
-    subtitle.textContent = [status(item), item.pinned ? '置顶' : '', `权重 ${item.weight}`, item.date ? new Date(item.date).toLocaleDateString('zh-CN') : ''].filter(Boolean).join(' · ');
-    button.append(title, subtitle);
+    subtitle.textContent = [status(item), item.pinned ? '置顶' : '', item.date ? new Date(item.date).toLocaleDateString('zh-CN') : ''].filter(Boolean).join(' · ');
+    const thumb = document.createElement('span');
+    thumb.className = 'record-thumb';
+    thumb.setAttribute('aria-hidden', 'true');
+    if (item.image) {
+      const image = document.createElement('img');
+      image.src = `/preview/${item.image}`;
+      image.alt = '';
+      image.loading = 'lazy';
+      thumb.append(image);
+    }
+    const label = document.createElement('span');
+    label.className = 'record-label';
+    label.append(title, subtitle);
+    button.append(thumb, label);
     button.onclick = () => {
       if (item.slug === selected || !acceptNavigation()) return;
       selected = item.slug;
@@ -81,31 +104,32 @@ function drawList() {
   }
 }
 
-const common = `
-  <label>标题<input name="title" maxlength="100" required></label>
-  <div class="pair">
-    <label>网址标识<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="60" placeholder="small-letters"><output id="slug-preview" class="hint" hidden></output></label>
-    <label>状态<select name="status"><option value="draft">草稿</option><option value="published"></option><option value="archived"></option></select></label>
-  </div>
+const statusField = '<label>状态<select name="status"><option value="draft">草稿</option><option value="published"></option><option value="archived"></option></select></label>';
+const articleAddress = '<label>文章网址<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="60" placeholder="随标题自动生成"><output id="slug-preview" class="hint" hidden></output></label>';
+const common = article => `
+  <label>${article ? '标题' : '商品名称'}<input name="title" maxlength="100" required></label>
+  ${article ? `<div class="pair">${articleAddress}${statusField}</div>` : `${statusField}<p class="hint">草稿仅供浏览，上架可购买，下架后隐藏。</p>`}
   <label>简介<textarea name="summary" rows="2" maxlength="500"></textarea></label>`;
 const keywords = '<label>搜索关键词<input name="keywords" maxlength="200" placeholder="多个关键词用空格分隔"></label>';
-const weight = `<label>权重<select name="weight"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>`;
-const productFields = `
+const weight = `<label>推荐权重<select name="weight"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select><span class="hint">仅用于商品推荐，5 优先于 1。</span></label>`;
+const productMetadata = `
   <div class="pair"><label>地区<input name="region" maxlength="32" list="regions"></label><label>分类<input name="category" maxlength="32" list="categories"></label></div>
-  <datalist id="regions"></datalist><datalist id="categories"></datalist>
+  <datalist id="regions"></datalist><datalist id="categories"></datalist>`;
+const productPurchase = `
   <div class="pair"><label>价格类型<select name="priceMode"><option value="hidden">价格待公布</option><option value="fixed">固定价格</option><option value="from">起始价格</option></select></label>${weight}</div>
   <div id="prices" class="fields" hidden>
     <div class="pair"><label>基准金额（USD）<input name="price" inputmode="decimal" maxlength="13"></label><label>计价单位<input name="unit" maxlength="16" placeholder="例如 月、张，选填"></label></div>
   </div>
   <div id="variants"></div>
-  <label class="check"><input name="sample" type="checkbox">标记为样例商品</label>
+  <label class="check"><input name="sample" type="checkbox">标记为样例商品</label>`;
+const productDescription = `
   <label>商品说明<textarea name="body" rows="6" maxlength="40000"></textarea><span class="hint">用空行分开段落，可以用 #、- 或 &gt; 开头写小标题、列表和引用。</span></label>
   <label>交付方式<input name="delivery" maxlength="150"></label>
   <label>购买须知<textarea name="notice" rows="3" maxlength="2000"></textarea></label>
   <label>官方网站<input name="url" type="url" placeholder="https://" maxlength="2000"></label>`;
 const articleFields = `
   <label>英文标题<input name="englishTitle" maxlength="100" placeholder="选填，用于生成可读的文章网址"></label>
-  <div class="pair"><label>作者<input name="author" maxlength="80" placeholder="NijiEhon" list="authors"></label>${weight}</div>
+  <label>作者<input name="author" maxlength="80" placeholder="NijiEhon" list="authors"></label>
   <datalist id="authors"></datalist>
   <div class="pair time-fields"><label>发布时间<input name="date" type="datetime-local"><span class="hint" id="timezone"></span></label><label>阅读时间（分钟）<input name="read" type="number" min="1" max="300" placeholder="自动估算"></label></div>
   <label class="check"><input name="pinned" type="checkbox">置顶</label>
@@ -180,13 +204,97 @@ function mountImage(container, label, getImage, setImage, position) {
   return useImage(field, getImage, setImage, position);
 }
 
-function editVariants(container, existing, priceMode, markDirty) {
+function editProductImages(container, record, markDirty) {
+  const photos = record?.image
+    ? [{ image: record.image, alt: record.imageAlt }, ...(record.gallery || []).map(photo => ({ ...photo }))]
+    : [{ image: '', alt: '' }];
+  const list = document.createElement('div');
+  list.className = 'fields';
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.className = 'secondary';
+  add.textContent = '添加商品图';
+  const refreshAdd = () => { add.disabled = photos.length >= 30 || photos.some(photo => !photo.image); };
+  add.onclick = () => {
+    if (busy) return;
+    photos.push({ image: '', alt: '' });
+    draw();
+    list.lastElementChild.querySelector('input[type=file]').focus();
+  };
+  function draw() {
+    list.replaceChildren(...photos.map((photo, index) => {
+      const row = document.createElement('div');
+      row.className = 'card-image-field fields';
+      const redraw = mountImage(row, index ? `第 ${index + 1} 张商品图` : '第 1 张商品图 · 商品卡片封面',
+        () => photo.image, source => {
+          if (!source && photos.length > 1) {
+            photos.splice(index, 1);
+            draw();
+          } else photo.image = source;
+          refreshAdd();
+          markDirty();
+        });
+      redraw();
+      row.insertAdjacentHTML('beforeend', '<label>图片描述<input maxlength="180" placeholder="简要描述图片，供读屏使用"></label><div class="image-reorder"><button type="button" class="secondary">上移</button><button type="button" class="secondary">下移</button></div>');
+      const description = row.querySelector('input[maxlength]');
+      description.value = photo.alt || '';
+      description.oninput = () => { photo.alt = description.value; };
+      const buttons = [...row.querySelectorAll('.image-reorder button')];
+      buttons.forEach((button, direction) => {
+        const target = index + (direction ? 1 : -1);
+        button.disabled = target < 0 || target >= photos.length;
+        button.onclick = () => {
+          if (busy) return;
+          [photos[index], photos[target]] = [photos[target], photos[index]];
+          draw();
+          markDirty();
+          const reordered = [...list.children[target].querySelectorAll('.image-reorder button')];
+          (reordered[direction].disabled ? reordered[1 - direction] : reordered[direction]).focus();
+        };
+      });
+      return row;
+    }));
+    refreshAdd();
+  }
+  container.append(list, add);
+  draw();
+  return photos;
+}
+
+function editVariants(container, existing, existingNotes, priceMode, markDirty) {
   const variants = (existing || []).map(option => ({ ...option }));
+  const methodNotes = { ...existingNotes };
+  const methodOf = option => option?.fulfillment || 'digital';
+  let method = methodOf(variants.find(option => option.stock !== 'restock') || variants[0]);
+  const methods = document.createElement('fieldset');
+  methods.innerHTML = '<legend>选择连接方式</legend><div class="variant-methods"></div><label class="method-note">连接方式备注<textarea rows="2" maxlength="160" placeholder="选填，例如寄送或交付说明"></textarea></label>';
+  const note = methods.querySelector('textarea');
+  note.oninput = () => { methodNotes[method] = note.value; };
+  const methodButtons = Object.entries(fulfillmentLabels).map(([value, label]) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.method = value;
+    button.textContent = label;
+    button.onclick = () => {
+      if (busy) return;
+      method = value;
+      drawVariants();
+    };
+    return button;
+  });
+  methods.querySelector('div').append(...methodButtons);
   const list = document.createElement('div');
   list.className = 'fields variant-list';
   list.addEventListener('input', event => {
     const row = event.target.closest('[data-variant]');
-    variants[Number(row.dataset.variant)][event.target.dataset.key] = event.target.value;
+    const key = event.target.dataset.key;
+    if (!row || !key) return;
+    variants[Number(row.dataset.variant)][key] = event.target.value;
+    if (key === 'fulfillment') {
+      method = event.target.value;
+      drawVariants();
+      list.querySelector(`[data-variant="${row.dataset.variant}"] [data-key="fulfillment"]`).focus();
+    }
   });
   const add = document.createElement('button');
   add.className = 'secondary';
@@ -194,22 +302,35 @@ function editVariants(container, existing, priceMode, markDirty) {
   add.textContent = '新增规格';
   add.onclick = () => {
     if (busy || variants.length >= 20) return;
-    variants.push({ name: '', price: '' });
+    variants.push({ name: '', price: '', fulfillment: method });
     markDirty();
     drawVariants();
     list.lastElementChild.querySelector('input').focus();
   };
   const section = document.createElement('fieldset');
-  section.innerHTML = '<legend>购买规格</legend><p class="hint">可留空使用默认规格。起始价格模式下可给不同规格定价，留空沿用基准金额。</p>';
+  section.innerHTML = '<legend>选择规格</legend><p class="hint">添加到所选连接方式下。起始价格模式下，规格价格留空会沿用基准金额。</p><p class="hint variant-empty"></p>';
+  const empty = section.querySelector('.variant-empty');
   section.append(list, add);
-  container.append(section);
+  container.append(methods, section);
+  const methodOptions = Object.entries(fulfillmentLabels).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
   function drawVariants() {
-    list.replaceChildren(...variants.map((option, index) => {
+    methodButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.method === method)));
+    note.value = methodNotes[method] || '';
+    list.replaceChildren(...variants.flatMap((option, index) => {
+      if (methodOf(option) !== method) return [];
       const row = document.createElement('div');
       row.className = 'variant-row';
       row.dataset.variant = index;
-      row.innerHTML = '<label>规格名称<input data-key="name" maxlength="80" required></label><label>规格价格（USD）<input data-key="price" maxlength="13" inputmode="decimal" placeholder="基准金额"></label><button type="button" class="secondary" aria-label="移除规格">移除</button>';
+      row.innerHTML = `<label>规格名称<input data-key="name" maxlength="80" required></label>
+<label>规格价格（USD）<input data-key="price" maxlength="13" inputmode="decimal" placeholder="基准金额"></label>
+<label>移至连接方式<select data-key="fulfillment">${methodOptions}</select></label>
+<label>库存<select data-key="stock"><option value="available">可加入购物车</option><option value="restock">等补货</option></select></label>
+<label class="variant-note">规格备注<textarea data-key="note" rows="2" maxlength="160" placeholder="选填"></textarea></label>
+<button type="button" class="secondary" aria-label="移除规格">移除</button>`;
       row.querySelector('[data-key=name]').value = option.name;
+      row.querySelector('[data-key=fulfillment]').value = method;
+      row.querySelector('[data-key=stock]').value = option.stock || 'available';
+      row.querySelector('[data-key=note]').value = option.note || '';
       const price = row.querySelector('[data-key=price]');
       price.value = option.price;
       price.parentElement.hidden = priceMode() !== 'from';
@@ -219,15 +340,26 @@ function editVariants(container, existing, priceMode, markDirty) {
         markDirty();
         drawVariants();
       };
-      return row;
+      return [row];
     }));
+    empty.hidden = list.childElementCount > 0;
+    empty.textContent = `${fulfillmentLabels[method]}下暂无规格。`;
     add.disabled = variants.length >= 20;
   }
+  function validate() {
+    const index = variants.findIndex(option => !option.name.trim());
+    if (index < 0) return true;
+    method = methodOf(variants[index]);
+    drawVariants();
+    list.querySelector(`[data-variant="${index}"] [data-key="name"]`).focus();
+    flash('请填写规格名称。', true);
+    return false;
+  }
   drawVariants();
-  return { variants, drawVariants };
+  return { variants, methodNotes, drawVariants, validate };
 }
 
-const blockTypes = { text: '段落', heading: '小标题', list: '列表', quote: '引用', image: '图片', cover: '使用封面', html: 'HTML' };
+const blockTypes = { text: '段落', heading: '小标题', list: '列表', quote: '引用', image: '图片', cover: '用卡片封面', html: 'HTML' };
 
 function editBlocks(container, existing, markDirty) {
   const blocks = existing?.length ? existing.map(block => ({ ...block })) : [{ type: 'text' }];
@@ -321,14 +453,55 @@ function editBlocks(container, existing, markDirty) {
   return blocks;
 }
 
+function resizePreview() {
+  if (!previewStage.clientWidth || !previewStage.clientHeight) return;
+  const scale = Math.min(1, previewStage.clientWidth / previewWidth);
+  previewViewport.style.width = `${previewWidth * scale}px`;
+  previewFrame.style.width = `${previewWidth}px`;
+  previewFrame.style.height = `${previewStage.clientHeight / scale}px`;
+  previewFrame.style.transform = `scale(${scale})`;
+}
+
+new ResizeObserver(resizePreview).observe(previewStage);
+for (const button of previewModes) {
+  button.onclick = () => {
+    previewWidth = Number(button.dataset.previewWidth);
+    previewModes.forEach(mode => mode.setAttribute('aria-pressed', String(mode === button)));
+    resizePreview();
+  };
+}
+
+function showPreview(title, url, live) {
+  previewPanel.hidden = false;
+  previewStage.hidden = !url && !live;
+  get('.preview-note').hidden = !previewStage.hidden;
+  get('.preview-modes').hidden = previewStage.hidden;
+  const link = get('#preview-link');
+  link.hidden = !url;
+  if (url) link.href = url;
+  else link.removeAttribute('href');
+  previewFrame.title = `${title}预览`;
+  previewFrame.src = url || 'about:blank';
+  previewFrame.removeAttribute('srcdoc');
+}
+
+function editorCard(title, contents) {
+  return `<section class="panel editor-card fields">${title ? `<h2 class="editor-section-title">${title}</h2>` : ''}${contents}</section>`;
+}
+
 function draw() {
   dirty = false;
+  get('.workspace').dataset.module = tab;
   document.querySelectorAll('[data-tab]').forEach(button => {
     if (button.dataset.tab === tab) button.setAttribute('aria-current', 'page');
     else button.removeAttribute('aria-current');
   });
   drawList();
   if (tab === 'accounts') {
+    previewPanel.hidden = true;
+    previewFrame.src = 'about:blank';
+    previewFrame.removeAttribute('srcdoc');
+    save.disabled = true;
     main.innerHTML = '<section class="panel"><h1>用户与订单</h1><p class="placeholder">购买系统正式上线后，这里会接入用户账号与订单管理。</p></section>';
     return;
   }
@@ -338,33 +511,35 @@ function draw() {
   const title = poster ? '首页海报' : `${record ? '编辑' : '新建'}${names[tab]}`;
   const description = poster ? '更换首页展示的 16:9 图片。' : article ? '编辑文章，右侧同步预览。' : '保存后即可查看商品与购买选项。';
   const preview = poster ? '/preview/index.html' : record ? `/preview/${article ? 'guide' : 'product'}-${record.slug}.html?draft` : '';
+  const imageField = `<div id="image"${article ? ' class="card-image-field"' : ''}><input type="hidden" name="image"></div>`;
   main.innerHTML = `
-    <div class="editor-layout">
-      <form id="editor" class="panel">
-        <div class="editor-header"><div><h1>${title}</h1><p>${description}</p></div><button class="primary" type="submit">保存</button></div>
-        <div class="fields">
-          ${poster ? '' : article ? `<h2 class="editor-section-title">基本信息</h2>${common}${articleFields}` : common.replace('标题<input', '商品名称<input')}
-          <div id="image"><input type="hidden" name="image"></div>
-          ${poster ? posterFields : `<label>图片描述<input name="imageAlt" maxlength="180" placeholder="简要描述图片，供读屏使用"></label>${article ? '<p class="hint">封面用于列表。正文用「图片」或「使用封面」块自行排版。</p><div id="article-blocks"></div>' : productFields}${keywords}`}
-        </div>
-      </form>
-      <section class="panel preview" aria-label="网页预览">
-        <header><h2>网页预览</h2>${preview ? `<a href="${preview}" target="_blank" rel="noopener">新窗口打开</a>` : ''}</header>
-        ${preview || article ? `<iframe title="${title}预览"${preview ? ` src="${preview}"` : ''}></iframe>` : '<p class="preview-note">保存后显示网页预览。</p>'}
-      </section>
-    </div>`;
+    <form id="editor" class="editor">
+      <div class="editor-header"><div><h1>${title}</h1><p>${description}</p></div><div class="editor-tools"><span id="editor-state" class="editor-state" hidden>未保存</span>${tab === 'products' && record ? '<button id="delete-product" class="secondary danger" type="button">删除商品</button>' : ''}</div></div>
+      ${poster ? editorCard('海报与裁切', imageField + posterFields) : `
+        ${editorCard('基本信息', common(article) + (article ? articleFields : productMetadata))}
+        ${article
+          ? editorCard('文章封面', imageField + '<label>图片描述<input name="imageAlt" maxlength="180" placeholder="简要描述图片，供读屏使用"></label><p class="hint">封面用于文章卡片。正文需要图片时，添加「图片」或「用卡片封面」块。放在第一块会作为正文首图。</p>') + editorCard('', '<div id="article-blocks"></div>')
+          : editorCard('商品图片', '<div id="product-images" class="fields"></div>') + editorCard('价格与规格', productPurchase) + editorCard('说明与交付', productDescription)}
+        ${editorCard('搜索', keywords)}
+      `}
+    </form>`;
+  main.scrollTop = 0;
+  showPreview(title, preview, article);
+  save.disabled = busy;
   const form = get('#editor');
   let blocks;
+  let productPhotos;
   let variantEditor;
   let timer;
   let previewVersion = 0;
   const markDirty = () => {
     dirty = true;
+    get('#editor-state').hidden = false;
     if (article) schedulePreview();
   };
-  const redrawImage = mountImage(get('#image'), poster ? '海报图片' : article ? '列表封面（选填）' : '商品图片',
+  const redrawImage = (poster || article) ? mountImage(get('#image'), poster ? '海报图片' : '卡片封面（发布必填）',
     () => form.elements.image.value, image => { form.elements.image.value = image; markDirty(); },
-    poster ? () => form.elements.position.value : undefined);
+    poster ? () => form.elements.position.value : undefined) : null;
   if (poster) form.elements.position.onchange = redrawImage;
   if (record) {
     for (const [key, value] of Object.entries(record)) {
@@ -375,13 +550,11 @@ function draw() {
       else target.value = key === 'date' && value ? localDate(value) : value ?? '';
     }
   }
-  redrawImage();
+  redrawImage?.();
   if (!poster) {
-    if (record) form.elements.slug.readOnly = true;
-    else form.elements.weight.value = '3';
-    form.elements.slug.required = !article;
     for (const option of form.elements.status.options) option.textContent = labels[tab][option.value];
     if (article) {
+      if (record) form.elements.slug.readOnly = true;
       blocks = editBlocks(get('#article-blocks'), record?.blocks, markDirty);
       get('#timezone').textContent = `本机时区 ${Intl.DateTimeFormat().resolvedOptions().timeZone}。到点后可生成并发布。`;
       inputOptions('#authors', state.data.articles.map(item => item.author));
@@ -397,7 +570,9 @@ function draw() {
         get('#related').append(label);
       }
     } else {
-      variantEditor = editVariants(get('#variants'), record?.variants, () => form.elements.priceMode.value, markDirty);
+      productPhotos = editProductImages(get('#product-images'), record, markDirty);
+      if (!record) form.elements.weight.value = '3';
+      variantEditor = editVariants(get('#variants'), record?.variants, record?.methodNotes, () => form.elements.priceMode.value, markDirty);
       inputOptions('#regions', state.data.products.map(item => item.region));
       inputOptions('#categories', state.data.products.map(item => item.category));
     }
@@ -418,7 +593,7 @@ function draw() {
 
   function refreshSlug() {
     const field = form.elements.slug;
-    const automatic = articleSlug(form.elements.title.value, form.elements.englishTitle.value, articleSlugs(state.data));
+    const automatic = articleSlug(form.elements.title.value, form.elements.englishTitle.value, contentSlugs(state.data, 'articles'));
     const output = get('#slug-preview');
     const slug = field.value.trim() || automatic;
     field.placeholder = automatic || '随标题自动生成';
@@ -436,8 +611,10 @@ function draw() {
       if (values.date && (!record?.date || values.date !== localDate(record.date))) values.date = new Date(values.date).toISOString();
       else if (values.date) values.date = record.date;
     } else if (!poster) {
+      values.images = productPhotos;
       values.sample = fields.has('sample');
       values.variants = variantEditor.variants;
+      values.methodNotes = variantEditor.methodNotes;
     }
     return values;
   }
@@ -450,9 +627,11 @@ function draw() {
       try {
         const { html } = await post('preview-article', { values: valuesFromForm() });
         if (version !== previewVersion || !form.isConnected) return;
-        const frame = get('.preview iframe');
+        const frame = previewFrame;
         const scroll = frame.contentWindow?.scrollY || 0;
-        frame.addEventListener('load', () => frame.contentWindow.scrollTo(0, scroll), { once: true });
+        frame.addEventListener('load', () => {
+          if (form.isConnected && frame.srcdoc === html) frame.contentWindow.scrollTo(0, scroll);
+        }, { once: true });
         frame.srcdoc = html;
       } catch {
         // Keep the last rendered version while an input is incomplete.
@@ -471,12 +650,35 @@ function draw() {
   form.onsubmit = async event => {
     event.preventDefault();
     if (busy) return;
+    if (variantEditor && !variantEditor.validate()) return;
+    if (article && form.elements.status.value === 'published' && !form.elements.image.value) {
+      flash('请为文章添加卡片封面后再发布。', true);
+      get('#image input[type=file]').focus();
+      return;
+    }
     setBusy(true);
     try {
       state = await post('save', { collection: tab, values: valuesFromForm(), original: selected ?? null });
       if (!poster) selected = state.selected;
+      const scroll = main.scrollTop;
       draw();
+      main.scrollTop = scroll;
       flash('已保存到本机。');
+    } catch (error) {
+      flash(error.message, true);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const remove = get('#delete-product');
+  if (remove) remove.onclick = async () => {
+    if (busy || !window.confirm(`删除「${record.title}」？商品及其文章关联会从本机内容移除，已有网址将显示已下架。${dirty ? '\n当前未保存的修改也会丢弃。' : ''}`)) return;
+    setBusy(true);
+    try {
+      state = await post('delete-product', { slug: record.slug });
+      selected = state.selected;
+      draw();
+      flash('商品已从本机移除。生成网站后更新网页。');
     } catch (error) {
       flash(error.message, true);
     } finally {
@@ -488,7 +690,8 @@ function draw() {
 function setBusy(active) {
   busy = active;
   generate.disabled = active || !state;
-  document.querySelectorAll('[data-tab], #new, #editor button[type=submit]').forEach(button => { button.disabled = active; });
+  save.disabled = active || !get('#editor');
+  document.querySelectorAll('[data-tab], #new, #delete-product').forEach(button => { button.disabled = active; });
   if (state) drawList();
 }
 

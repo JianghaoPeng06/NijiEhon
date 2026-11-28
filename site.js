@@ -1,12 +1,25 @@
 const header = document.querySelector("header");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
+const externalArrow = header.querySelector(".external-icon");
+function markExternalLinks(root) {
+  if (!externalArrow) return;
+  for (const link of root.querySelectorAll("a[href]")) {
+    if (!["http:", "https:"].includes(link.protocol) || link.origin === location.origin || link.querySelector(".external-icon")) continue;
+    const icon = externalArrow.cloneNode(true);
+    icon.setAttribute("style", "width: .75em; height: .75em; vertical-align: -.05em");
+    link.append(" ", icon);
+  }
+}
+markExternalLinks(document);
+
 for (const frame of document.querySelectorAll('[data-article-html]')) {
   let observer;
   const resize = () => {
     observer?.disconnect();
     const body = frame.contentDocument?.body;
     if (!body) return;
+    markExternalLinks(body);
     observer = new ResizeObserver(() => {
       const height = Math.min(1600, Math.ceil(body.getBoundingClientRect().height));
       if (height > 0) frame.style.height = `${height}px`;
@@ -77,9 +90,12 @@ const pageName = location.pathname.split("/").pop() || "index.html";
 header.querySelectorAll("nav a").forEach(link => {
   if (link.getAttribute("href") === pageName) link.setAttribute("aria-current", "page");
 });
-if (/^guide-/.test(pageName)) header.querySelector('[href="research.html"]').setAttribute("aria-current", "location");
-if (/^product-/.test(pageName)) header.querySelector('[href="products.html"]').setAttribute("aria-current", "location");
+if (/^guide-/.test(pageName)) header.querySelector('#research-menu summary').setAttribute("aria-current", "location");
+if (/^product-/.test(pageName)) header.querySelector('#products-menu summary').setAttribute("aria-current", "location");
 header.querySelector('nav a[aria-current="page"]')?.closest("details")?.querySelector("summary").setAttribute("aria-current", "location");
+document.querySelectorAll(".footer-links a").forEach(link => {
+  if (link.getAttribute("href") === pageName) link.setAttribute("aria-current", "page");
+});
 if (pageName === "donate.html") header.querySelector("#contact-menu summary").setAttribute("aria-current", "location");
 function openContact() {
   const menu = header.querySelector("#contact-menu");
@@ -97,7 +113,7 @@ window.addEventListener("pageshow", () => {
 });
 const filters = {};
 const empty = document.querySelector("#empty");
-document.querySelectorAll("fieldset").forEach(group => {
+document.querySelectorAll("fieldset[data-filter], fieldset[data-amount]").forEach(group => {
   group.addEventListener("click", event => {
     const button = event.target.closest("button");
     if (!button) return;
@@ -155,11 +171,15 @@ const searchItems = [
   ["guide-0.html","第一次选择海外号码","指南","电话卡 SIM 美国 英国 NijiEhon 海外号码 SIM 卡 运营商"],
   ["guide-1.html","收到 SIM 卡后如何开始","指南","电话卡 激活 NijiEhon SIM 卡 开卡激活"],
   ["guide-2.html","开通云服务器前的准备","指南","服务器 VPS NijiEhon 云服务器 SSH 计费"],
-  ["product-0.html","美国 Ultra Mobile 电话卡","产品","SIM 美国 手机卡 面向需要了解美国手机号和短信接收方式的读者，整理 Ultra Mobile PayGo 的选购与开卡要点。 通信 美国"],
-  ["product-1.html","英国 giffgaff 电话卡","产品","SIM 英国 手机卡 适合先了解英国号码、激活步骤及日常漫游条件的读者，购买前可按使用地点核对需求。 通信 英国"],
-  ["product-2.html","Apple 账户","产品","苹果 Apple ID 一份 Apple 账户设置资料示例，涵盖账户地区、付款方式和账户恢复准备。 账户 多地区"],
+  ["product-0.html","美国 Ultra Mobile 电话卡","产品","Ultra Mobile SIM eSIM 美国 电话卡 手机卡 包激活 等补货 需要一个美国号码用于日常联系或低频收发短信？实体 SIM 和 eSIM 两种规格均包含激活服务。 通信 美国"],
+  ["product-1.html","英国 giffgaff 电话卡","产品","giffgaff SIM eSIM 英国 电话卡 手机卡 未激活 包激活 需要英国号码，可以选择自行激活的实体卡，或选含激活服务的实体卡和 eSIM。 通信 英国"],
+  ["product-2.html","Apple 账号注册","产品","苹果 Apple ID Apple 账户 Apple 账号 注册教学 代注册 想为特定地区的 App 或 Apple 服务准备账号？可选注册教学或代注册。 账户 多地区"],
+  ["product-google-account.html","Google 账号注册","产品","谷歌 Google 账户 Google 账号 注册教学 代注册 为日常邮件或 Google 服务准备账号，可按需选择注册教学或代注册。 账户 多地区"],
+  ["product-ai-account.html","AI 账号注册","产品","人工智能 AI 账户 AI 账号 注册教学 代注册 先确定想使用的 AI 平台，再选择按步骤自行注册或由我们代注册。 账户 多地区"],
   ["product-3.html","云服务器","产品","VPS 云主机 用两种入门配置展示机房、内存与预算的选择方式，适合准备部署轻量网站的读者。 工具 多地区"],
   // END ADMIN: search
+  ["favorite-products.html", "商品收藏", "产品", "我的收藏 收藏商品"],
+  ["favorite-articles.html", "收藏夹", "研究", "我的收藏 收藏文章"],
   ["terms.html", "服务条款", "关于", "购买 开通 售后"],
   ["privacy.html", "隐私政策", "关于", "邮箱 会话存储 搜索"],
   ["statement.html", "声明", "关于", "地区 价格 官方"]

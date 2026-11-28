@@ -4,8 +4,8 @@ import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { collections, detail, imagePath, normalizePoster, normalizeRecord, recordImages, render, route, snapshot } from './content.mjs';
-import { articleSlug, articleSlugs } from './public/slug.js';
+import { collections, compareArticles, detail, imagePath, normalizePoster, normalizeRecord, recordImages, render, route, snapshot, verifyArticleCover } from './content.mjs';
+import { articleSlug, contentSlugs, productSlug } from './public/slug.js';
 
 const admin = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(admin, '../..');
@@ -18,13 +18,22 @@ const hash = content => createHash('sha256').update(content).digest('hex');
 const json = data => `${JSON.stringify(data, null, 2)}\n`;
 const readSite = file => readFileSync(path.join(root, file), 'utf8').replaceAll('\r\n', '\n');
 const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.woff2': 'font/woff2' };
-const adminFiles = new Map([['/', 'index.html'], ['/app.js', 'app.js'], ['/admin.css', 'admin.css'], ['/slug.js', 'slug.js']]);
+const adminFiles = new Map([['/', 'index.html'], ['/app.js', 'app.js'], ['/admin.css', 'admin.css'], ['/slug.js', 'slug.js'], ['/purchase-options.js', 'purchase-options.js']]);
 const publicPath = /^(?:[a-z0-9-]+\.(?:html|css|js)|assets\/(?:[a-z0-9_-]+\/)*[a-zA-Z0-9_.-]+\.(?:js|css|jpg|png|webp|woff2))$/;
 const retiredPath = /^(?:product|guide)-[a-z0-9]+(?:-[a-z0-9]+)*\.html$/;
 
 function normalizeData(data) {
   data.poster = normalizePoster(data.poster);
-  for (const collection of collections) data[collection] = data[collection].map(item => normalizeRecord(collection, item));
+  data.products = data.products.map(item => normalizeRecord('products', item));
+  data.articles = data.articles.map(item => {
+    const article = normalizeRecord('articles', item);
+    // Keep the cover previously shown automatically, now as an editable body block.
+    if (Object.hasOwn(item, 'weight') && article.image && article.blocks.length < 100 &&
+        !article.blocks.some(block => block.type === 'cover' || block.image === article.image)) {
+      article.blocks.unshift({ type: 'cover', caption: '' });
+    }
+    return article;
+  }).sort(compareArticles);
   if (data.retired.some(name => !retiredPath.test(name))) throw new Error('已发布数据中包含无效的历史地址。');
   return data;
 }
@@ -39,7 +48,10 @@ function state() {
   if (!existsSync(draftFile)) return { ...current, revision: current.base };
   const saved = JSON.parse(readFileSync(draftFile, 'utf8'));
   if (saved.base !== current.base) throw new Error('已发布内容已从别的来源更新。本机草稿保存在 tools/admin/.local/draft.json，请先合并或移出草稿文件。');
-  return { ...saved, data: normalizeData(saved.data) };
+  const data = normalizeData(saved.data);
+  const order = new Map(current.data.products.map((item, index) => [item.slug, index]));
+  data.products.sort((a, b) => (order.get(a.slug) ?? order.size) - (order.get(b.slug) ?? order.size));
+  return { ...saved, data };
 }
 
 function atomicWrite(file, contents) {
@@ -51,6 +63,11 @@ function atomicWrite(file, contents) {
   } finally {
     rmSync(temp, { force: true });
   }
+}
+
+function saveDraft(saved) {
+  saved.revision = randomUUID();
+  atomicWrite(draftFile, json(saved));
 }
 
 function asset(image) {
@@ -65,6 +82,7 @@ function verifyImage(image) {
 
 function buildFiles(saved) {
   const data = snapshot(saved.data, published().data);
+  for (const article of data.articles) verifyArticleCover(article);
   const files = render(data, readSite);
   for (const image of new Set([data.poster.image, ...collections.flatMap(collection => data[collection].flatMap(recordImages))])) {
     verifyImage(image);
@@ -130,7 +148,7 @@ function staticFile(response, file) {
 
 function preview(response, url, file) {
   if (!publicPath.test(file)) return send(response, 404, 'text/plain; charset=utf-8', '找不到页面或文件。');
-  if (!file.endsWith('.html') && file !== 'site.js') return staticFile(response, imagePath.test(file) ? asset(file) : path.join(root, file));
+  if (!file.endsWith('.html') && !['site.js', 'catalog.js'].includes(file)) return staticFile(response, imagePath.test(file) ? asset(file) : path.join(root, file));
   const saved = state();
   const data = snapshot(saved.data, published().data);
   if (url.searchParams.has('draft') && retiredPath.test(file)) {
@@ -153,7 +171,7 @@ async function handle(request, response) {
     if (endpoint === '/api/state') return sendJson(response, 200, state());
     if (endpoint.startsWith('/preview/')) return preview(response, url, endpoint.slice(9) || 'index.html');
   }
-  if (request.method !== 'POST' || !['/api/upload', '/api/save', '/api/generate', '/api/preview-article'].includes(endpoint)) return sendJson(response, 404, { error: '找不到此操作。' });
+  if (request.method !== 'POST' || !['/api/upload', '/api/save', '/api/delete-product', '/api/generate', '/api/preview-article'].includes(endpoint)) return sendJson(response, 404, { error: '找不到此操作。' });
   if (request.headers.origin !== origin) return sendJson(response, 403, { error: '请从后台页面操作。' });
   if (endpoint === '/api/upload') {
     const bytes = await readBody(request, 10 * 1024 * 1024);
@@ -164,12 +182,22 @@ async function handle(request, response) {
   const payload = JSON.parse((await readBody(request, 256 * 1024)).toString());
   const saved = state();
   if (payload.revision !== saved.revision) return sendJson(response, 409, { error: '内容已在其他窗口修改。请复制未保存的文字，刷新后继续。' });
+  if (endpoint === '/api/delete-product') {
+    const index = saved.data.products.findIndex(item => item.slug === payload.slug);
+    if (index < 0) return sendJson(response, 404, { error: '找不到要删除的商品。' });
+    saved.data.products.splice(index, 1);
+    saved.data.retired.push(route('products', payload.slug));
+    for (const article of saved.data.articles) article.related = article.related.filter(slug => slug !== payload.slug);
+    saveDraft(saved);
+    const selected = saved.data.products[Math.min(index, saved.data.products.length - 1)]?.slug;
+    return sendJson(response, 200, { ...saved, selected });
+  }
   if (endpoint === '/api/preview-article') {
     const values = payload.values;
     const blocks = (values.blocks || []).filter(block => block.type !== 'cover' || values.image);
     const item = normalizeRecord('articles', { ...values, blocks, slug: 'preview', title: values.title?.trim() || '未命名文章', status: 'draft' });
     const shell = readSite('research.html').replace('<head>', '<head>\n<base href="/preview/">').replace(/^<script defer src="(?:auth(?:-config)?\.js|assets\/vendor\/supabase-[^"]+\.js)"><\/script>\n/gm, '');
-    return sendJson(response, 200, { html: detail(shell, 'articles', item, snapshot(saved.data, published().data).products) });
+    return sendJson(response, 200, { html: detail(shell, 'articles', { ...item, preview: true }, snapshot(saved.data, published().data).products) });
   }
   if (endpoint === '/api/save') {
     let selected;
@@ -179,10 +207,17 @@ async function handle(request, response) {
     } else {
       if (!collections.includes(payload.collection)) throw new Error('无法识别内容类型。');
       const values = payload.values;
-      if (payload.collection === 'articles' && payload.original === null && !values.slug?.trim()) {
-        values.slug = articleSlug(values.title || '', values.englishTitle || '', articleSlugs(saved.data));
+      if (!values.slug?.trim()) {
+        if (payload.original !== null) values.slug = payload.original;
+        else {
+          const reserved = contentSlugs(saved.data, payload.collection);
+          values.slug = payload.collection === 'articles'
+            ? articleSlug(values.title || '', values.englishTitle || '', reserved)
+            : productSlug(values.title || '', reserved);
+        }
       }
       const item = normalizeRecord(payload.collection, values);
+      if (payload.collection === 'articles') verifyArticleCover(item);
       for (const image of recordImages(item)) verifyImage(image);
       const list = saved.data[payload.collection];
       const index = list.findIndex(record => record.slug === item.slug);
@@ -190,10 +225,10 @@ async function handle(request, response) {
       if (payload.original === null && (index >= 0 || saved.data.retired.includes(route(payload.collection, item.slug)))) throw new Error('此网址已被使用。');
       if (index < 0) list.push(item);
       else list[index] = item;
+      if (payload.collection === 'articles') list.sort(compareArticles);
       selected = item.slug;
     }
-    saved.revision = randomUUID();
-    atomicWrite(draftFile, json(saved));
+    saveDraft(saved);
     return sendJson(response, 200, { ...saved, selected });
   }
   return sendJson(response, 200, { files: generate(saved) });

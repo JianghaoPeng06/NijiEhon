@@ -1,9 +1,12 @@
+import { fulfillmentLabels } from './public/purchase-options.js';
+
 export const collections = ['products', 'articles'];
 const currency = 'USD';
-export const imagePath = /^assets\/(?:placeholders\/[a-z0-9-]+\.jpg|station\.jpg|content\/[a-f0-9]{64}\.(?:jpg|png|webp))$/;
+export const imagePath = /^assets\/(?:placeholders\/[a-z0-9-]+\.(?:jpg|png|webp)|station\.jpg|content\/[a-f0-9]{64}\.(?:jpg|png|webp))$/;
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const formatter = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: 'numeric', day: 'numeric' });
 const blockTypes = ['text', 'heading', 'list', 'quote', 'image', 'cover', 'html'];
+const usd = new Intl.NumberFormat('zh-CN', { style: 'currency', currency, currencyDisplay: 'code' });
 
 function field(value, label, max, required = false) {
   const text = typeof value === 'string' ? value.trim() : '';
@@ -77,8 +80,7 @@ export function normalizeRecord(collection, values) {
     slug: slug(values.slug), title: field(values.title, '标题', 100, true),
     summary: field(values.summary, '简介', 500, !article && status === 'published'),
     image: image(values.image), imageAlt: field(values.imageAlt, '图片描述', 180),
-    keywords: field(values.keywords, '搜索关键词', 200),
-    weight: choice(Number(values.weight), [1, 2, 3, 4, 5], '权重'), status
+    keywords: field(values.keywords, '搜索关键词', 200), status
   };
   if (article) {
     const blocks = articleBlocks(values);
@@ -107,24 +109,58 @@ export function normalizeRecord(collection, values) {
   const unit = price ? field(values.unit, '计价单位', 16) : '';
   const options = values.variants ?? [];
   if (!Array.isArray(options) || options.length > 20) throw new Error('一个商品最多可添加 20 个规格。');
-  const variants = options.map(option => ({ name: field(option.name, '规格名称', 80, true), price: priceMode === 'from' ? amount(option.price, '规格价格') : '' }));
+  const variants = options.map(option => {
+    const fulfillment = choice(option.fulfillment || 'digital', Object.keys(fulfillmentLabels), '规格交付方式');
+    const stock = choice(option.stock || 'available', ['available', 'restock'], '规格库存');
+    const note = field(option.note, '规格备注', 160);
+    return {
+      name: field(option.name, '规格名称', 80, true),
+      price: priceMode === 'from' ? amount(option.price, '规格价格') : '',
+      ...(fulfillment === 'digital' ? {} : { fulfillment }),
+      ...(stock === 'available' ? {} : { stock }),
+      ...(note ? { note } : {})
+    };
+  });
   if (new Set(variants.map(option => option.name.toLowerCase())).size !== variants.length) throw new Error('规格名称不能重复。');
-  return { ...record, region, category, url, currency, priceMode, price, unit, variants, body: field(values.body, '商品说明', 40000), delivery: field(values.delivery, '交付方式', 150), notice: field(values.notice, '购买须知', 2000), sample: values.sample === true };
+  const weight = choice(Number(values.weight ?? 3), [1, 2, 3, 4, 5], '推荐权重');
+  const methodNotes = Object.fromEntries(Object.keys(fulfillmentLabels)
+    .map(method => [method, field(values.methodNotes?.[method], '连接方式备注', 160)])
+    .filter(([, note]) => note));
+  const images = values.images ?? [{ image: record.image, alt: record.imageAlt }, ...(values.gallery || [])];
+  if (!Array.isArray(images) || images.length > 30) throw new Error('每件商品最多可添加 30 张图片。');
+  const [cover, ...gallery] = images.filter(photo => photo.image).map(photo => ({
+    image: image(photo.image), alt: field(photo.alt, '商品图片描述', 180)
+  }));
+  record.image = cover?.image || '';
+  record.imageAlt = cover?.alt || '';
+  return { ...record, ...(gallery.length ? { gallery } : {}), weight, region, category, url, currency, priceMode, price, unit, variants, ...(Object.keys(methodNotes).length ? { methodNotes } : {}), body: field(values.body, '商品说明', 40000), delivery: field(values.delivery, '交付方式', 150), notice: field(values.notice, '购买须知', 2000), sample: values.sample === true };
+}
+
+export function verifyArticleCover(item) {
+  if (item.status === 'published' && !item.image) throw new Error(`请为《${item.title}》添加卡片封面后再发布。`);
 }
 
 export function recordImages(item) {
-  return [item.image, ...(item.blocks || []).filter(block => block.type === 'image').map(block => block.image)].filter(Boolean);
+  return [item.image, ...(item.gallery || []).map(photo => photo.image), ...(item.blocks || []).filter(block => block.type === 'image').map(block => block.image)].filter(Boolean);
 }
 
 export function route(collection, id) {
   return `${collection === 'products' ? 'product' : 'guide'}-${id}.html`;
 }
 
+export function compareArticles(a, b) {
+  return Number(b.pinned) - Number(a.pinned) || b.date.localeCompare(a.date);
+}
+
+function recommendedProducts(products) {
+  return products.filter(item => item.status === 'published').sort((a, b) => b.weight - a.weight).slice(0, 3);
+}
+
 export function visible(data, now = Date.now()) {
   return {
-    products: data.products.filter(item => item.status === 'published').sort((a, b) => b.weight - a.weight),
+    products: data.products.filter(item => item.status !== 'archived'),
     articles: data.articles.filter(item => item.status === 'published' && Date.parse(item.date) <= now)
-      .sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.weight - a.weight || b.date.localeCompare(a.date))
+      .sort(compareArticles)
   };
 }
 
@@ -132,13 +168,13 @@ export function snapshot(data, previous, now) {
   const active = visible(data, now);
   const names = collections.flatMap(collection => active[collection].map(item => route(collection, item.slug)));
   const old = collections.flatMap(collection => previous[collection].map(item => route(collection, item.slug)));
-  return { poster: data.poster, ...active, retired: [...new Set([...previous.retired, ...old])].filter(name => !names.includes(name)).sort() };
+  return { poster: data.poster, ...active, retired: [...new Set([...previous.retired, ...data.retired, ...old])].filter(name => !names.includes(name)).sort() };
 }
 
 const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 export const escape = value => String(value ?? '').replace(/[&<>"']/g, char => entities[char]);
 
-function articleMeta(item, pinned = false) {
+function articleMeta(item) {
   const parts = item.date ? formatter.formatToParts(new Date(item.date)) : [];
   const date = Object.fromEntries(parts.map(part => [part.type, part.value]));
   const iso = parts.length ? `${date.year}-${date.month.padStart(2, '0')}-${date.day.padStart(2, '0')}` : '';
@@ -147,7 +183,7 @@ function articleMeta(item, pinned = false) {
   const han = text.match(/\p{Script=Han}/gu) || [];
   const words = text.replace(/\p{Script=Han}/gu, ' ').match(/[\p{L}\p{N}]+/gu) || [];
   const minutes = item.read ?? Math.max(1, Math.ceil(han.length / 350 + words.length / 220));
-  return `<span class="article-meta">${pinned && item.pinned ? '置顶 · ' : ''}${display}${escape(item.author)} · 约 ${minutes} 分钟阅读</span>`;
+  return `<span class="article-meta">${display}约 ${minutes} 分钟阅读</span>`;
 }
 
 function imageTag(item, css) {
@@ -155,31 +191,69 @@ function imageTag(item, css) {
   return `<img class="${css}" src="${escape(item.image)}" alt="${escape(item.imageAlt)}" loading="lazy" decoding="async">`;
 }
 
+function zoomableImage(item, css, attributes = '') {
+  return `<a class="image-zoom" href="${escape(item.image)}" data-image-zoom aria-label="${escape(item.imageAlt ? `查看大图：${item.imageAlt}` : '查看大图')}"${attributes}>${imageTag(item, css)}</a>`;
+}
+
+function purchaseOptions(item) {
+  const variants = item.variants.length ? item.variants : [{ name: '默认规格' }];
+  return variants.map(variant => ({
+    name: variant.name,
+    cents: item.priceMode === 'hidden' ? null : Math.round(Number(variant.price || item.price) * 100),
+    fulfillment: variant.fulfillment || 'digital',
+    stock: variant.stock || 'available',
+    ...(variant.note ? { note: variant.note } : {})
+  }));
+}
+
 function displayPrice(item) {
   if (item.priceMode === 'hidden') return '价格待公布';
   const prices = item.variants.map(option => Number(option.price || item.price));
   const base = prices.length ? Math.min(...prices) : Number(item.price);
-  const amount = new Intl.NumberFormat('zh-CN', { style: 'currency', currency: item.currency, currencyDisplay: 'code' }).format(base);
+  const amount = usd.format(base);
   return `${amount}${item.priceMode === 'from' ? ' 起' : ''}${item.unit ? ` / ${escape(item.unit)}` : ''}`;
 }
 
-function productCard(item) {
-  return `<a class="tile" href="${route('products', item.slug)}" data-region="${escape(item.region)}" data-category="${escape(item.category)}">\n${imageTag(item, 'cover')}<span>${escape(item.title)}${item.priceMode === 'hidden' ? '' : `<small class="article-meta">${item.sample ? '样例 · ' : ''}${displayPrice(item)}</small>`}</span></a>`;
+const bookmark = '<svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4h10a1 1 0 0 1 1 1v15l-6-4-6 4V5a1 1 0 0 1 1-1Z"/></svg>';
+
+function favoriteButton(collection, item, card = false) {
+  const label = `收藏${collection === 'products' ? '商品' : '文章'}：${item.title}`;
+  return `<button class="${card ? 'icon-button favorite-badge' : 'favorite-button'}" type="button" data-favorite="${route(collection, item.slug)}"${card ? ' data-saved-only' : ''} aria-label="${escape(label)}" title="${escape(label)}" aria-pressed="false" hidden>
+${card ? bookmark : `<span data-favorite-text>收藏</span><span data-favorite-icon hidden>${bookmark}</span>`}
+</button>`;
 }
 
-function articleCard(item, featured = false) {
-  return `<a${featured ? ' class="tile"' : ''} href="${route('articles', item.slug)}">\n${imageTag(item, featured ? 'cover' : 'mini') || (featured ? '' : '<span class="mini content-placeholder" aria-hidden="true"></span>')}\n<div><span class="article-title">${escape(item.title)}</span>${articleMeta(item, true)}</div>\n</a>`;
+function favoriteMarker(collection, item) {
+  return `<span class="favorite-badge" data-favorite-marker="${route(collection, item.slug)}" aria-hidden="true" hidden>${bookmark}</span>`;
 }
 
-function bodyBlock(block, item) {
+function productCard(item, saved = false) {
+  const href = route('products', item.slug);
+  const price = item.priceMode === 'hidden' ? '' : `${item.sample ? '样例 · ' : ''}${displayPrice(item)}`;
+  const metadata = [item.status === 'draft' ? '草稿 · 仅供浏览' : '', price].filter(Boolean).join(' · ');
+  return `<div class="tile product-card" data-region="${escape(item.region)}" data-category="${escape(item.category)}"${saved ? ` data-favorite-item="${href}" hidden` : ''}>
+<a class="tile-link" href="${href}"><span class="card-visual">${imageTag(item, 'cover') || '<span class="cover content-placeholder" aria-hidden="true"></span>'}${saved ? '' : favoriteMarker('products', item)}</span><span>${escape(item.title)}${metadata ? `<small class="article-meta">${metadata}</small>` : ''}</span></a>
+${saved ? favoriteButton('products', item, true) : ''}
+</div>`;
+}
+
+function articleCard(item, featured = false, saved = false) {
+  const size = featured ? 'cover' : 'mini';
+  return `<a${featured ? ' class="tile"' : ''} href="${route('articles', item.slug)}">
+<span class="card-visual">${imageTag(item, size) || `<span class="${size} content-placeholder" aria-hidden="true"></span>`}${saved ? '' : favoriteMarker('articles', item)}</span>
+<div><span class="article-title">${escape(item.title)}</span>${articleMeta(item)}</div>
+</a>`;
+}
+
+function bodyBlock(block, item, headingTag = 'h2', hero = false) {
   switch (block.type) {
-    case 'heading': return `<h2>${escape(block.text)}</h2>`;
+    case 'heading': return `<${headingTag}>${escape(block.text)}</${headingTag}>`;
     case 'list': return `<ul>${block.text.split(/\r?\n/).filter(line => line.trim()).map(line => `<li>${escape(line)}</li>`).join('')}</ul>`;
     case 'quote': return `<blockquote><p>${escape(block.text).replace(/\r?\n/g, '<br>')}</p></blockquote>`;
     case 'image':
     case 'cover': {
       const image = block.type === 'cover' ? item : { image: block.image, imageAlt: block.alt };
-      return `<figure class="article-figure">${imageTag(image, 'article-image')}${block.caption ? `<figcaption>${escape(block.caption)}</figcaption>` : ''}</figure>`;
+      return `<figure class="article-figure${hero ? ' article-hero' : ''}">${zoomableImage(image, 'article-image')}${block.caption ? `<figcaption>${escape(block.caption)}</figcaption>` : ''}</figure>`;
     }
     case 'html': {
       const document = `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' https: data:; base-uri 'none'; form-action 'none'"><style>body{margin:0;display:flow-root;font:1rem/1.65 system-ui,sans-serif;color:#151516;overflow-wrap:anywhere}img{max-width:100%;height:auto}</style><body>${block.text}</body></html>`;
@@ -189,42 +263,118 @@ function bodyBlock(block, item) {
   }
 }
 
-function productDetails(item) {
-  const photo = item.image && `<div class="product-visual">${imageTag({ ...item, imageAlt: item.imageAlt || item.title }, 'product-image')}</div>`;
+function optionText(name, restock, note) {
+  return `<span class="purchase-option-copy">
+<span class="purchase-option-name">${escape(name)}</span>${restock ? '<small class="shop-stock">等补货</small>' : ''}${note ? `<small class="purchase-option-note">${escape(note)}</small>` : ''}
+</span>`;
+}
+
+function purchaseForm(item) {
+  const options = purchaseOptions(item);
+  const initial = options.find(option => option.stock === 'available') || options[0];
+  const groups = Object.groupBy(options, option => option.fulfillment);
+  const methods = Object.keys(fulfillmentLabels).filter(method => groups[method]).map(method => [method, groups[method]]);
+  const showMethods = methods.length > 1 || methods.some(([method]) => item.methodNotes?.[method]);
+  const methodField = showMethods ? `<fieldset class="purchase-options">
+<legend>选择连接方式</legend>
+${methods.map(([method, variants]) => `<label class="purchase-option">
+<input type="radio" name="fulfillment" value="${method}"${method === initial.fulfillment ? ' checked' : ''}>
+${optionText(fulfillmentLabels[method], variants.every(variant => variant.stock === 'restock'), item.methodNotes?.[method])}</label>`).join('\n')}
+</fieldset>` : '';
+  const viewOnly = item.status === 'draft';
+  return `<form class="purchase-form" method="post" data-purchase="${escape(item.slug)}"${item.preview ? ' data-draft-preview' : ''}${viewOnly ? ' data-view-only' : ''}${item.sample ? ' data-sample' : ''}>
+${methodField}
+${methods.map(([method, variants]) => `<fieldset class="purchase-options" data-option-group="${method}"${method === initial.fulfillment ? '' : ' hidden disabled'}>
+<legend>选择规格</legend>
+${variants.map(option => `<label class="purchase-option">
+<input type="radio" name="variant" value="${escape(option.name)}" data-cents="${option.cents ?? ''}" data-stock="${option.stock}"${option === initial ? ' checked' : ''} required>
+${optionText(option.name, option.stock === 'restock', option.note)}
+<small class="purchase-option-price">${option.cents === null ? '待公布' : usd.format(option.cents / 100)}</small></label>`).join('\n')}
+</fieldset>`).join('\n')}
+<div class="shop-quantity">
+<label for="purchase-quantity">数量</label>
+<div class="quantity-stepper">
+<button type="button" data-quantity-step="-1" aria-label="减少数量" disabled>−</button>
+<input id="purchase-quantity" name="quantity" type="number" min="1" max="99" step="1" value="1" inputmode="numeric" required>
+<button type="button" data-quantity-step="1" aria-label="增加数量">+</button>
+</div>
+</div>
+<div class="purchase-total"><span>${item.sample ? '样例小计' : '商品小计'}</span><output aria-live="polite">${initial.cents === null ? '价格待公布' : usd.format(initial.cents / 100)}</output></div>
+<div class="shop-actions"><button type="submit" class="shop-primary" disabled>${viewOnly ? '仅供浏览' : '加入购物车'}</button><a class="pill" href="cart.html">查看购物车</a></div>
+<p class="shop-status" role="status"></p>
+</form>`;
+}
+
+function recommendations(items) {
+  const recommended = recommendedProducts(items);
+  return recommended.length ? `<section class="shop-recommendations">
+<div class="section-heading"><h2>你可能还喜欢</h2><a href="products.html">浏览产品</a></div>
+${grid(recommended, productCard, 'grid')}
+</section>` : '';
+}
+
+function productGallery(item) {
+  if (!item.image) return '';
+  const photos = [{ image: item.image, alt: item.imageAlt }, ...(item.gallery || [])];
+  const multi = photos.length > 1;
+  return `<section class="product-visual product-gallery" data-gallery aria-label="商品图片">
+<div class="gallery-stage">${photos.map((photo, index) => zoomableImage({
+    image: photo.image, imageAlt: photo.alt || `${item.title}${multi ? ` · 第 ${index + 1} 张` : ''}`
+  }, 'product-image', ` data-gallery-slide${index ? ' hidden' : ''}`)).join('\n')}</div>
+${multi ? `<div class="gallery-controls" hidden>
+<button class="icon-button gallery-arrow" type="button" data-gallery-step="-1" aria-label="上一张图片" disabled></button>
+<div class="gallery-dots" role="group" aria-label="选择商品图片">${photos.map((_, index) =>
+    `<button type="button" data-gallery-index="${index}" aria-label="第 ${index + 1} 张图片" aria-pressed="${index === 0}"></button>`).join('')}</div>
+<button class="icon-button gallery-arrow" type="button" data-gallery-step="1" aria-label="下一张图片"></button>
+</div>
+<span class="gallery-status" role="status"></span>` : ''}
+</section>`;
+}
+
+function productDetails(item, products) {
+  const photo = productGallery(item);
   const info = [item.region, item.category].filter(Boolean).map(escape).join(' · ');
-  const variants = item.variants.length ? item.variants : [{ name: '默认规格', price: '' }];
-  const options = variants.map((variant, index) => `<option value="${index}" data-price="${item.priceMode === 'hidden' ? '' : escape(variant.price || item.price)}">${escape(variant.name)}</option>`).join('');
-  const official = item.url ? `<a class="pill" href="${escape(item.url)}">前往官方网站</a>` : '';
+  const official = item.url ? `<a class="pill" href="${escape(item.url)}">前往官方网站 <svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>` : '';
   return `<article class="product-detail${photo ? '' : ' product-detail-text'}">
 ${photo || ''}
 <div class="product-information">
 ${info ? `<p class="product-kicker">${info}</p>` : ''}
-<h1>${escape(item.title)}</h1>
+<div class="product-title"><h1>${escape(item.title)}</h1>${item.preview ? '' : favoriteButton('products', item)}</div>
 <p class="product-price">${item.sample ? '<span>样例价格</span> ' : ''}${displayPrice(item)}</p>
 ${item.summary ? `<p class="product-intro">${escape(item.summary)}</p>` : ''}
-${item.body ? `<section class="product-description"><h2>商品说明</h2><div class="content-body">${legacyBlocks(item.body).map(block => bodyBlock(block)).join('\n')}</div></section>` : ''}
+${purchaseForm(item)}
+${item.body ? `<section class="product-description"><h2>商品说明</h2><div class="content-body">${legacyBlocks(item.body).map(block => bodyBlock(block, item, 'h3')).join('\n')}</div></section>` : ''}
 ${item.delivery ? `<p class="product-delivery"><strong>交付方式</strong> ${escape(item.delivery)}</p>` : ''}
 ${item.notice ? `<p class="product-notice"><strong>购买须知</strong> ${escape(item.notice).replace(/\r?\n/g, '<br>')}</p>` : ''}
-<div class="content-actions"><button class="pill dark" type="button" data-buy-product aria-haspopup="dialog" aria-controls="product-purchase">购买</button>${official}</div>
+${official ? `<div class="content-actions">${official}</div>` : ''}
 </div>
 </article>
-<dialog class="purchase-dialog" id="product-purchase" aria-labelledby="purchase-title" data-currency="${escape(item.currency)}">
-<form method="dialog" class="purchase-panel">
-<div class="purchase-heading"><div><h2 id="purchase-title">选择购买选项</h2><p>${escape(item.title)}</p></div><button type="submit" formnovalidate class="icon-button" aria-label="关闭">×</button></div>
-<label class="purchase-field">规格<select id="purchase-spec" autofocus>${options}</select></label>
-<div class="purchase-field"><label for="purchase-quantity">数量</label><div class="purchase-quantity"><button type="button" data-quantity-step="-1" aria-label="减少数量">−</button><input id="purchase-quantity" type="number" value="1" min="1" max="99" step="1" inputmode="numeric"><button type="button" data-quantity-step="1" aria-label="增加数量">+</button></div></div>
-<div class="purchase-total"><span>${item.sample ? '样例小计' : '参考小计'}</span><output id="purchase-total" aria-live="polite">${displayPrice(item)}</output></div>
-<p class="purchase-note">下单功能暂未开放。</p>
-<button class="pill dark" type="button" disabled>下单</button>
-</form>
-</dialog>`;
+${recommendations(products.filter(product => product.slug !== item.slug))}`;
 }
 
 function articleDetails(item, products) {
   const tags = item.tags.length ? `<ul class="article-tags" aria-label="标签">${item.tags.map(tag => `<li>${escape(tag)}</li>`).join('')}</ul>` : '';
   const related = item.related.map(id => products.find(product => product.slug === id)).filter(Boolean);
   const links = related.length ? `<nav class="content-actions" aria-label="相关产品">${related.map(product => `<a class="pill" href="${route('products', product.slug)}">${escape(product.title)}</a>`).join('')}</nav>` : '';
-  return `<article>\n<h1>${escape(item.title)}</h1>\n${articleMeta(item)}\n${tags}\n${item.summary ? `<p class="article-intro">${escape(item.summary)}</p>` : ''}\n<div class="content-body">${item.blocks.map(block => bodyBlock(block, item)).join('\n')}</div>\n${links}\n</article>`;
+  const first = item.blocks[0];
+  const hero = ['image', 'cover'].includes(first?.type) ? bodyBlock(first, item, 'h2', true) : '';
+  return `<article class="research-article">
+<div class="article-toolbar"><a href="research.html">探索研究</a>${item.preview ? '' : favoriteButton('articles', item)}</div>
+<div class="article-header">
+${articleMeta(item)}
+<h1>${escape(item.title)}</h1>
+${item.summary ? `<p class="article-intro">${escape(item.summary)}</p>` : ''}
+</div>
+${hero}
+<div class="article-reading">
+<div class="content-body">${item.blocks.slice(hero ? 1 : 0).map(block => bodyBlock(block, item)).join('\n')}</div>
+${links}
+<div class="article-end">
+<p class="article-author"><span>作者</span> ${escape(item.author)}</p>
+${tags}
+</div>
+</div>
+</article>`;
 }
 
 function slot(text, name, value, js = false) {
@@ -241,8 +391,93 @@ function grid(items, render, className, fallback = '') {
 }
 
 function filters(items, key, label) {
-  const options = ['全部', ...new Set(items.map(item => item[key]))];
+  const options = ['全部', ...new Set(items.map(item => item[key]).filter(Boolean))];
   return `<fieldset data-filter="${key}">\n<legend>${label}</legend>\n${options.map((option, index) => `<button type="button" aria-pressed="${index === 0}">${escape(option)}</button>`).join('\n')}\n</fieldset>`;
+}
+
+function pageShell(shell, title, content, scripts = '', parent = '', archived = false) {
+  return shell
+    .replace(/<title>[^<]*<\/title>/, () => `<title>${escape(title)} · NijiEhon</title>${archived ? '\n<meta name="robots" content="noindex">' : ''}`)
+    .replace('</head>', scripts + '</head>')
+    .replace(/<main>[\s\S]*?<\/main>/, () => `<main>\n${content}\n</main>`)
+    .replace(/(<nav class="footer-crumb"[^>]*>.*?)<span aria-current="page">[^<]*<\/span>/, (_, opening) => `${opening}${parent}<span aria-current="page">${escape(title)}</span>`);
+}
+
+function cartPage(shell, products) {
+  return pageShell(shell, '购物车', `<div class="cart-page" data-cart>
+<h1>购物车</h1>
+<section class="cart-empty" aria-labelledby="cart-empty-title" hidden>
+<h2 id="cart-empty-title">你的购物车是空的</h2>
+<a class="pill shop-primary" href="products.html">浏览产品</a>
+</section>
+<ul class="cart-items" aria-label="购物车商品"></ul>
+<template data-cart-item>
+<li class="cart-item">
+<input class="cart-choice" type="checkbox" data-control="selected">
+<div class="cart-image"><img alt="" loading="lazy"></div>
+<div class="cart-item-detail"><h2><a class="cart-item-title"></a></h2><p class="cart-variant"></p><p class="shop-stock" hidden></p></div>
+<div class="cart-item-controls">
+<strong class="cart-line-total"></strong>
+<label class="shop-quantity">数量 <input type="number" min="1" max="99" step="1" inputmode="numeric" data-control="quantity"></label>
+<div class="cart-item-actions"><button type="button" data-control="edit" aria-haspopup="dialog" aria-controls="cart-edit">编辑选项</button><button type="button" data-control="remove">移除</button></div>
+</div>
+</li>
+</template>
+<dialog class="cart-dialog" id="cart-edit" aria-labelledby="cart-edit-title">
+<div class="account-dialog-heading"><h2 id="cart-edit-title">编辑商品选项</h2><button type="button" class="icon-button" aria-label="关闭编辑窗口" data-close-cart-edit>×</button></div>
+<form class="cart-edit-form" method="dialog">
+<p class="shop-hint" data-edit-product></p>
+<label>规格<select name="variant" required autofocus></select></label>
+<label class="shop-quantity">数量 <input name="quantity" type="number" min="1" max="99" step="1" inputmode="numeric" required></label>
+<div class="purchase-total"><span>商品小计</span><output aria-live="polite"></output></div>
+<button class="shop-primary" type="submit">保存更改</button>
+<p class="shop-status" role="status"></p>
+</form>
+</dialog>
+<p class="shop-status" role="status" data-cart-status></p>
+<section class="checkout" aria-labelledby="checkout-title" hidden>
+<h2 id="checkout-title">结算</h2>
+<div class="checkout-grid">
+<section class="address-card" aria-labelledby="checkout-address-title">
+<div class="section-heading"><h3 id="checkout-address-title">收货地址</h3><a href="account.html#shipping-address">地址管理</a></div>
+<div data-address-editor></div>
+</section>
+<div class="checkout-delivery" hidden><h3>电子交付</h3><p>所选商品无需填写收货地址。</p></div>
+<div class="checkout-summary">
+<dl>
+<div><dt>商品小计</dt><dd data-checkout-subtotal></dd></div>
+<div><dt>税费</dt><dd data-checkout-tax></dd></div>
+<div><dt>运费</dt><dd data-checkout-shipping></dd></div>
+<div class="checkout-total"><dt>参考合计</dt><dd data-checkout-subtotal></dd></div>
+</dl>
+<p class="shop-hint" data-checkout-note></p>
+<button class="shop-primary" type="button" disabled>提交订单</button>
+</div>
+</div>
+<a class="shop-link" href="contact.html">联系客服</a>
+</section>
+</div>
+${recommendations(products)}`,
+  '<script type="module" src="cart.js"></script>\n<script type="module" src="address.js"></script>\n',
+  '<a href="products.html">产品</a> / ');
+}
+
+function favoritesPage(shell, collection, items) {
+  const product = collection === 'products';
+  const title = product ? '商品收藏' : '收藏夹';
+  const browse = product ? 'products.html' : 'research.html';
+  const other = product ? 'favorite-articles.html' : 'favorite-products.html';
+  const cards = product ? item => productCard(item, true) : item =>
+    `<div class="tile favorite-article-card" data-favorite-item="${route('articles', item.slug)}" hidden>
+${articleCard(item, true, true)}${favoriteButton('articles', item, true)}</div>`;
+  return pageShell(shell, title, `<section class="favorites-page" data-favorites-list aria-labelledby="favorites-title">
+<div class="section-heading"><h1 id="favorites-title" tabindex="-1">${title}</h1><a href="${other}">${product ? '收藏文章' : '收藏商品'}</a></div>
+<div class="favorites-empty" data-favorites-empty>
+<p>还没有收藏的${product ? '商品' : '文章'}。</p>
+<a class="pill" href="${browse}">${product ? '浏览产品' : '探索研究'}</a>
+</div>
+${grid(items, cards, 'grid')}
+</section>`, '', `<a href="${browse}">${product ? '产品' : '研究'}</a> / `);
 }
 
 export function detail(shell, collection, item, products) {
@@ -250,13 +485,9 @@ export function detail(shell, collection, item, products) {
   const section = article ? '研究' : '产品';
   const list = article ? 'research.html' : 'products.html';
   const available = item.status !== 'archived' || item.preview;
-  const content = !available ? `<article><h1>${escape(item.title)}</h1><p>这项内容目前未公开。</p></article>` : article ? articleDetails(item, products) : productDetails(item);
-  const extraScript = available && !article ? '<script defer src="product.js"></script>\n' : '';
-  return shell
-    .replace(/<title>[^<]*<\/title>/, () => `<title>${escape(item.title)} · NijiEhon</title>${item.status === 'archived' ? '\n<meta name="robots" content="noindex">' : ''}`)
-    .replace('</head>', extraScript + '</head>')
-    .replace(/<main>[\s\S]*?<\/main>/, () => `<main>\n${content}\n</main>`)
-    .replace(/(<nav class="footer-crumb"[^>]*>.*?)<span aria-current="page">[^<]*<\/span>/, (_, opening) => `${opening}<a href="${list}">${section}</a> / <span aria-current="page">${escape(item.title)}</span>`);
+  const content = !available ? `<article><h1>${escape(item.title)}</h1><p>这项内容目前未公开。</p></article>` : article ? articleDetails(item, products) : productDetails(item, products);
+  const extraScript = available && !article ? '<script type="module" src="product.js"></script>\n' : '';
+  return pageShell(shell, item.title, content, extraScript, `<a href="${list}">${section}</a> / `, item.status === 'archived');
 }
 
 export function render(data, read) {
@@ -266,9 +497,16 @@ export function render(data, read) {
   const pages = new Map();
   const banner = `<img class="banner" src="${escape(poster.image)}" alt="${escape(poster.alt)}"${poster.position === 'center' ? '' : ` style="object-position:center ${poster.position}"`}>`;
   let home = slot(read('index.html'), 'poster', banner);
-  home = slot(home, 'home-products', grid(products.slice(0, 3), productCard, 'grid', '<p>暂无上架产品。</p>'));
+  home = slot(home, 'home-products', grid(recommendedProducts(products), productCard, 'grid', '<p>暂无上架产品。</p>'));
   pages.set('index.html', slot(home, 'home-articles', grid(articles.slice(0, 3), articleCard, 'article-list', '<p>暂无已发布文章。</p>')));
   pages.set('products.html', slot(productsShell, 'catalog', [filters(products, 'region', '使用地区'), filters(products, 'category', '产品分类'), grid(products, productCard, 'grid'), `<p id="empty"${products.length ? ' hidden' : ''}>当前组合暂无产品。</p>`].join('\n')));
+  pages.set('cart.html', cartPage(productsShell, products));
+  pages.set('favorite-products.html', favoritesPage(productsShell, 'products', products));
+  pages.set('favorite-articles.html', favoritesPage(researchShell, 'articles', articles));
+  const catalog = products.map(item => ({
+    slug: item.slug, title: item.title, image: item.image, status: item.status, sample: item.sample, options: purchaseOptions(item)
+  }));
+  pages.set('catalog.js', `// Generated by tools/admin/content.mjs.\nexport const catalog = ${JSON.stringify(catalog, null, 2)};\n`);
   pages.set('research.html', slot(researchShell, 'research', `${grid(articles.slice(0, 3), item => articleCard(item, true), 'grid')}\n<section>\n<h2>全部文章</h2>\n${grid(articles, articleCard, 'article-list', '<p>暂无已发布文章。</p>')}\n</section>`));
   for (const collection of collections) {
     for (const item of data[collection]) pages.set(route(collection, item.slug), detail(collection === 'products' ? productsShell : researchShell, collection, item, products));

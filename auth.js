@@ -186,7 +186,12 @@
       if (user) { const current = user; setTimeout(() => { if (user?.id === current.id) loadAvatar(current); }, 0); }
     }
     controls();
+    reportAddressSession();
   }
+  function reportAddressSession() {
+    document.dispatchEvent(new CustomEvent('nijiehon:address-session', { detail: user && user.id !== recoveryUserId ? user.id : null }));
+  }
+  document.addEventListener('nijiehon:request-address-session', reportAddressSession);
   async function action(task, report = status) {
     if (!ready || !client || busy) return;
     busy = true; controls(); report('');

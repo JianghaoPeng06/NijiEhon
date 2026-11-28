@@ -11,28 +11,43 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="brand-mark" aria-hidden="true"><span>𒀭</span></span><div><strong>NijiEhon</strong><span>网站后台</span></div></div>
+    <div class="brand"><span class="brand-mark" aria-hidden="true"><span>𒀭</span></span><strong>NijiEhon 后台</strong></div>
+    <nav class="module-tabs" aria-label="后台模块">
+      <button type="button" data-tab="products" aria-current="page">商品</button>
+      <button type="button" data-tab="articles">文章</button>
+      <button type="button" data-tab="poster">首页海报</button>
+      <button type="button" data-tab="accounts">用户与订单</button>
+    </nav>
     <div class="top-actions">
+      <button class="secondary save-action" id="save" type="submit" form="editor" disabled>保存</button>
       <a class="button secondary" href="/preview/" target="_blank" rel="noopener">预览网站</a>
       <button class="primary" id="generate" type="button" disabled>生成网站</button>
     </div>
   </header>
-  <div class="workspace">
-    <aside class="sidebar">
-      <nav aria-label="后台模块">
-        <button type="button" data-tab="products" aria-current="page">商品</button>
-        <button type="button" data-tab="articles">文章</button>
-        <button type="button" data-tab="poster">首页海报</button>
-        <button type="button" data-tab="accounts">用户与订单</button>
-      </nav>
-      <div id="collection" hidden>
-        <div class="list-heading"><h2 id="list-title"></h2><button id="new" type="button" aria-label="新建" title="新建">+</button></div>
+  <div class="workspace" data-module="products">
+    <aside class="sidebar" id="collection" aria-labelledby="list-title" hidden>
+        <button id="new" class="primary" type="button">＋ 新建商品</button>
         <input id="filter" type="search" placeholder="筛选内容" aria-label="筛选内容">
+        <h2 id="list-title"></h2>
         <div id="records"></div>
-      </div>
-      <span class="local-label">仅在本机运行</span>
     </aside>
     <main id="main"><p class="placeholder">正在读取内容…</p></main>
+    <section class="preview" id="preview" aria-labelledby="preview-title" hidden>
+      <header class="preview-bar">
+        <h2 id="preview-title">页面预览</h2>
+        <div class="preview-actions">
+          <div class="preview-modes" role="group" aria-label="预览设备">
+            <button type="button" data-preview-width="1120" aria-pressed="true">电脑</button>
+            <button type="button" data-preview-width="390" aria-pressed="false">手机</button>
+          </div>
+          <a id="preview-link" target="_blank" rel="noopener" hidden>新窗口打开</a>
+        </div>
+      </header>
+      <p class="preview-note" hidden>保存商品后即可预览详情页。</p>
+      <div class="preview-stage">
+        <div class="preview-viewport"><iframe title="页面预览"></iframe></div>
+      </div>
+    </section>
   </div>
   <p id="status" class="status" role="status" hidden></p>
   <template id="image-field">

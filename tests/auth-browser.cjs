@@ -7,6 +7,7 @@ const path = require('node:path');
 const { spawn } = require('node:child_process');
 const assert = require('node:assert/strict');
 const origin = process.env.TEST_ORIGIN || 'http://127.0.0.1:8001';
+const corsOrigin = new URL(origin).origin;
 const chrome = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const port = 9341;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -87,7 +88,7 @@ async function connect(id) {
         else { type = 'image/png'; body = fs.readFileSync(path.join(__dirname, '../assets/default-avatar.png')); }
       } else { code = 404; body = { error: 'Unmocked endpoint' }; }
       const raw = Buffer.isBuffer(body) ? body : Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
-      await send('Fetch.fulfillRequest', { requestId, responseCode: code, responseHeaders: [ {name:'X-Supabase-Api-Version',value:'2024-01-01'}, {name:'Access-Control-Expose-Headers',value:'X-Supabase-Api-Version'}, { name: 'Content-Type', value: type }, { name: 'Cache-Control', value: 'no-store' }, { name: 'Access-Control-Allow-Origin', value: origin }, { name: 'Access-Control-Allow-Headers', value: '*' }, { name: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' } ], body: raw.toString('base64') });
+      await send('Fetch.fulfillRequest', { requestId, responseCode: code, responseHeaders: [ {name:'X-Supabase-Api-Version',value:'2024-01-01'}, {name:'Access-Control-Expose-Headers',value:'X-Supabase-Api-Version'}, { name: 'Content-Type', value: type }, { name: 'Cache-Control', value: 'no-store' }, { name: 'Access-Control-Allow-Origin', value: corsOrigin }, { name: 'Access-Control-Allow-Headers', value: '*' }, { name: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' } ], body: raw.toString('base64') });
     }
   };
   await send('Fetch.enable', { patterns: [ { urlPattern: '*auth-config.js' }, { urlPattern: 'https://fixture.supabase.co/*' } ] });
@@ -318,6 +319,15 @@ async function connect(id) {
   const second = await connect(secondId);
   await second.navigate('account.html');
   assert.equal(await second.run('document.querySelector("#email").textContent'), account.email);
+  await second.run(`(() => {
+    const form = document.querySelector('#shipping-address form');
+    const address = { recipient: '测试收件人', phone: '0000000000', country: '中国', city: '测试市', street: '测试路 1 号' };
+    for (const [name, value] of Object.entries(address)) form.elements[name].value = value;
+    form.requestSubmit();
+  })()`);
+  assert(await second.run('document.querySelector("#shipping-address address").textContent.includes("测试收件人")'));
+  await second.navigate('account.html');
+  assert(await second.run('!document.querySelector("[data-address-saved]").hidden && document.querySelector("#shipping-address address").textContent.includes("测试路")'));
   assert(await second.run(`(() => {
     const button = document.querySelector("#account-settings");
     return button.classList.contains("icon-button") && button.getAttribute("aria-label") === "设置"
@@ -368,6 +378,7 @@ async function connect(id) {
   await signOut();
   await main.until('!document.querySelector("#login").hidden && document.querySelector("#account-card").hidden');
   assert(await second.run('document.querySelector("#name").textContent === "访客" && document.querySelector(".portrait").getAttribute("src") === "assets/default-avatar.png"'));
+  assert(await second.run('document.querySelector("[data-address-member]").hidden && !document.querySelector("#shipping-address address").textContent'));
   await main.navigate('index.html');
   assert(await main.run('!document.querySelector("#login").hidden'));
   await main.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
