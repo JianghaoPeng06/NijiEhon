@@ -48,8 +48,14 @@
 <div id="email-login" hidden>
 <p id="login-hint" class="login-divider">使用邮箱和密码登录</p>
 <input id="login-email" name="email" type="email" required autocomplete="username" aria-label="电子邮箱" placeholder="输入您的电子邮箱" data-auth-control disabled>
+<div class="password-field">
 <input id="login-password" name="password" type="password" maxlength="72" autocomplete="current-password" aria-label="密码" placeholder="输入密码" data-auth-control disabled>
-<input id="login-password-confirm" type="password" maxlength="72" autocomplete="new-password" aria-label="确认密码" placeholder="再次输入密码" data-auth-control disabled hidden>
+<button class="password-toggle" type="button" aria-label="显示密码" aria-controls="login-password" aria-pressed="false" data-auth-control disabled></button>
+</div>
+<div class="password-field" hidden>
+<input id="login-password-confirm" type="password" maxlength="72" autocomplete="new-password" aria-label="确认密码" placeholder="再次输入密码" data-auth-control disabled>
+<button class="password-toggle" type="button" aria-label="显示确认密码" aria-controls="login-password-confirm" aria-pressed="false" data-auth-control disabled></button>
+</div>
 <div id="email-code-step" hidden>
 <input id="login-code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}" maxlength="10" aria-label="邮箱验证码" placeholder="输入邮箱验证码" data-auth-control disabled>
 <div class="code-actions"><button id="resend-code" type="button" data-auth-control disabled>重新发送验证码</button><button id="change-email" type="button" data-auth-control disabled>更换邮箱</button></div>
@@ -73,7 +79,7 @@
 <div id="account-card" hidden>
 <h2>欢迎回来，<span data-account-name></span></h2>
 <img class="account-card-avatar" data-user-avatar src="assets/default-avatar.png" width="72" height="72" alt="我的头像">
-<div><a class="pill dark" href="account.html">进入个人中心</a><button type="button" data-sign-out data-auth-control>退出登录</button></div>
+<div><a class="pill dark" href="account.html">进入个人中心</a></div>
 <p class="auth-status" data-auth-status role="status"></p>
 </div>
 </section>
@@ -132,7 +138,7 @@
 </div>
 </div>
 <div class="footer-bottom">
-<p class="footer-copyright">NijiEhon <span class="copyright-mark">©</span> 2026 <span class="footer-version" aria-label="网站版本 v0.1.0">v0.1.0</span></p>
+<p class="footer-copyright">NijiEhon <span class="copyright-mark">©</span> 2026 <span class="footer-version" aria-label="网站版本 v0.2.0">v0.2.0</span></p>
 <details class="footer-language">
 <summary aria-label="选择语言，当前：简体中文 中国">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg>

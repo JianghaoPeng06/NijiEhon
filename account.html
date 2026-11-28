@@ -40,21 +40,19 @@
 <button id="account-back" class="icon-button" type="button" aria-label="返回上一页" title="返回">
 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 5-7 7 7 7M3 12h18"/></svg>
 </button>
-<button id="account-edit" class="icon-button" type="button" aria-label="编辑个人资料" title="编辑个人资料" aria-controls="avatar-dialog" aria-haspopup="dialog" aria-expanded="false">
-<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 4 5 5M4 20l5-1L21 7a2.1 2.1 0 0 0-4-4L5 15l-1 5Z"/></svg>
-</button>
+<button id="account-settings" class="settings-button" type="button" aria-controls="settings-dialog" aria-haspopup="dialog" aria-expanded="false" disabled>设置</button>
 </div>
 <h1>个人中心</h1>
 <section class="profile">
-<button id="avatar-preview" class="portrait-button" type="button" aria-label="查看和修改头像" aria-haspopup="dialog" aria-controls="avatar-dialog" aria-expanded="false"><img class="portrait" data-user-avatar src="assets/default-avatar.png" width="96" height="96" alt="用户头像"></button>
+<button id="avatar-preview" class="portrait-button" type="button" aria-label="修改头像" aria-haspopup="dialog" aria-controls="avatar-dialog" aria-expanded="false"><img class="portrait" data-user-avatar src="assets/default-avatar.png" width="96" height="96" alt="用户头像"></button>
 <div>
 <h2 id="name">访客</h2>
 <span id="email">
 </span>
 </div>
 </section>
-<dialog id="avatar-dialog" class="avatar-dialog" aria-labelledby="avatar-title">
-<div class="avatar-dialog-heading"><h2 id="avatar-title">头像</h2><button id="avatar-close" class="icon-button" type="button" aria-label="关闭头像窗口" autofocus><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+<dialog id="avatar-dialog" class="account-dialog" aria-labelledby="avatar-title">
+<div class="account-dialog-heading"><h2 id="avatar-title">修改头像</h2><button id="avatar-close" class="icon-button" type="button" aria-label="关闭头像窗口" data-close-dialog autofocus><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
 <img class="avatar-large" data-user-avatar src="assets/default-avatar.png" width="256" height="256" alt="当前头像预览">
 <div id="avatar-settings" hidden>
 <label for="avatar-file">更换头像</label>
@@ -64,23 +62,49 @@
 </div>
 <p id="avatar-login"><a class="pill dark" href="index.html#login">登录后修改头像</a></p>
 </dialog>
-<details id="password-settings" class="password-settings" hidden>
-<summary>设置或更改密码</summary>
+<dialog id="settings-dialog" class="account-dialog" aria-labelledby="settings-title">
+<div class="account-dialog-heading"><h2 id="settings-title">设置</h2><button class="icon-button" type="button" aria-label="关闭设置" data-close-dialog autofocus><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+<details class="settings-section">
+<summary>修改昵称</summary>
+<form id="profile-settings-form" method="post">
+<label for="account-nickname">昵称</label>
+<input id="account-nickname" type="text" autocomplete="nickname" maxlength="60" required data-auth-control disabled>
+<button type="submit" class="dark" data-auth-control disabled>保存昵称</button>
+<p id="profile-status" class="auth-status" role="status"></p>
+</form>
+</details>
+<button id="settings-avatar" class="settings-row" type="button" aria-haspopup="dialog" aria-controls="avatar-dialog" aria-expanded="false">修改头像</button>
+<details id="password-settings" class="settings-section">
+<summary>设置或修改密码</summary>
 <form id="password-settings-form" method="post" aria-busy="true">
 <input id="password-account-email" type="hidden" name="username" autocomplete="username">
 <label for="account-password">新密码（至少 8 个字符）</label>
+<div class="password-field">
 <input id="account-password" name="password" type="password" required minlength="8" maxlength="72" autocomplete="new-password" data-auth-control disabled>
+<button class="password-toggle" type="button" aria-label="显示密码" aria-controls="account-password" aria-pressed="false" data-auth-control disabled></button>
+</div>
 <label for="account-password-confirm">确认新密码</label>
+<div class="password-field">
 <input id="account-password-confirm" type="password" required minlength="8" maxlength="72" autocomplete="new-password" data-auth-control disabled>
+<button class="password-toggle" type="button" aria-label="显示确认密码" aria-controls="account-password-confirm" aria-pressed="false" data-auth-control disabled></button>
+</div>
 <button type="submit" class="dark" data-auth-control disabled>保存密码</button>
 <p id="password-status" class="auth-status" role="status"></p>
 </form>
 </details>
+<button class="settings-row settings-sign-out" type="button" data-sign-out data-auth-control hidden>退出登录</button>
+<p id="settings-status" class="auth-status" role="status"></p>
+</dialog>
+<button id="password-help" type="button" aria-haspopup="dialog" aria-controls="password-help-dialog" aria-expanded="false" hidden>密码设置帮助</button>
+<dialog id="password-help-dialog" class="account-dialog" aria-labelledby="password-help-title" aria-describedby="password-help-message">
+<div class="account-dialog-heading"><h2 id="password-help-title">设置密码</h2><button class="icon-button" type="button" aria-label="关闭密码提示" data-close-dialog><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+<p id="password-help-message">如果还没有设置密码，请前往个人中心右上角的「设置」设置密码。</p>
+<button id="go-to-password-settings" type="button" class="dark" autofocus>去设置</button>
+</dialog>
 <h2>我的订单</h2>
 <div class="orders">登录后查看订单</div>
 <p id="account-action">
 <a id="account-login" href="index.html#login">前往登录</a>
-<button type="button" data-sign-out data-auth-control hidden>退出登录</button>
 </p>
 <p class="auth-status" data-auth-status role="status" aria-live="polite">正在确认登录状态…</p>
 </main>
@@ -109,7 +133,7 @@
 </div>
 </div>
 <div class="footer-bottom">
-<p class="footer-copyright">NijiEhon <span class="copyright-mark">©</span> 2026 <span class="footer-version" aria-label="网站版本 v0.1.0">v0.1.0</span></p>
+<p class="footer-copyright">NijiEhon <span class="copyright-mark">©</span> 2026 <span class="footer-version" aria-label="网站版本 v0.2.0">v0.2.0</span></p>
 <details class="footer-language">
 <summary aria-label="选择语言，当前：简体中文 中国">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg>

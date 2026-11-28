@@ -155,7 +155,7 @@ function renderSearch() {
 }
 
 function openSearch() {
-  if (searchDialog.open || document.querySelector("#avatar-dialog[open]")) return;
+  if (document.querySelector("dialog[open]")) return;
   selectMenu(null);
   searchReturnFocus = document.activeElement;
   searchInput.value = "";

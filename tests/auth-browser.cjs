@@ -40,11 +40,13 @@ async function connect(id) {
       else if (url.pathname === '/auth/v1/otp') {
         sends++; verificationType = 'email';
         if (failOtp) { code = 429; body = { code: 'over_email_send_rate_limit', msg: 'rate limited' }; }
+        else Object.assign(account.user_metadata, JSON.parse(request.postData).data);
       } else if (url.pathname === '/auth/v1/signup') {
-        const { email, password } = JSON.parse(request.postData);
+        const { email, password, data } = JSON.parse(request.postData);
         assert.equal(email, account.email);
         assert.equal(password, 'SignupPass123');
         signupSends++; verificationType = 'signup'; savedPassword = password;
+        Object.assign(account.user_metadata, data);
         body = account;
       } else if (url.pathname === '/auth/v1/resend') {
         const { type: resendType, email } = JSON.parse(request.postData);
@@ -105,7 +107,7 @@ async function connect(id) {
   await main.run('sessionStorage.setItem("nijiehon.demoEmail","fake@example.com")');
   await main.navigate('index.html');
   assert(await main.run('!document.querySelector("#login").hidden && document.querySelector("#account-card").hidden && !sessionStorage.getItem("nijiehon.demoEmail")'));
-  assert(await main.run('!document.querySelector("#login-password").hidden && document.querySelector("#email-code-step").hidden'));
+  assert(await main.run('!document.querySelector("#login-password").parentElement.hidden && document.querySelector("#email-code-step").hidden'));
   await main.run('document.querySelector(\'[data-login-mode="otp"]\').click()');
   failOtp = true;
   await main.run('document.querySelector("#login-email").value="test@example.com";document.querySelector("#login").requestSubmit()');
@@ -123,17 +125,37 @@ async function connect(id) {
   const second = await connect(secondId);
   await second.navigate('account.html');
   assert.equal(await second.run('document.querySelector("#email").textContent'), account.email);
-  await second.run('document.querySelector("#password-settings summary").click();document.querySelector("#account-password").value="OriginalPass123";document.querySelector("#account-password-confirm").value="OriginalPass123";document.querySelector("#password-settings-form").requestSubmit()');
+  await second.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  assert.equal(await second.run('document.querySelector("#password-help").textContent'), '现在设置密码');
+  await second.run('document.querySelector("#password-help").click()');
+  assert(await second.run('document.querySelector("#password-help-dialog").open && document.querySelector("#password-help-message").textContent.includes("右上角")'));
+  await second.run('document.querySelector("#go-to-password-settings").click()');
+  assert(await second.run('document.querySelector("#settings-dialog").open && document.querySelector("#password-settings").open && document.activeElement.id === "account-password"'));
+  assert(await second.run('document.querySelector("#settings-dialog").getBoundingClientRect().right <= innerWidth && document.documentElement.scrollWidth <= innerWidth'));
+  await second.run('document.querySelector("#account-password").value="OriginalPass123";document.querySelector("#account-password-confirm").value="OriginalPass123";document.querySelector(\'[aria-controls="account-password"]\').click()');
+  assert(await second.run('document.querySelector("#account-password").type === "text" && document.querySelector("#account-password-confirm").type === "password"'));
+  await second.run('document.querySelector("#password-settings-form").requestSubmit()');
   await second.until('document.querySelector("#password-status").textContent.includes("密码已保存")');
   assert.equal(passwordUpdates, 1);
+  assert(await second.run('document.querySelector("#password-help").hidden && document.querySelector("#password-settings summary").textContent === "修改密码" && document.querySelector("#account-password").type === "password"'));
+  await second.run('document.querySelector("#profile-settings-form").closest("details").open=true;document.querySelector("#account-nickname").value="  彩虹  ";document.querySelector("#profile-settings-form").requestSubmit()');
+  await second.until('document.querySelector("#profile-status").textContent.includes("昵称已保存")');
+  assert.equal(account.user_metadata.nickname, '彩虹');
+  assert.equal(await second.run('document.querySelector("#name").textContent'), '彩虹');
+  await main.until('document.querySelector("[data-account-name]").textContent === "彩虹"');
+  await second.run('document.querySelector("#settings-avatar").click()');
+  assert(await second.run('document.querySelector("#avatar-dialog").open && document.querySelector("#settings-dialog").open'));
+  await second.run('document.querySelector("#avatar-close").click();document.querySelector("#settings-dialog [data-close-dialog]").click()');
   await second.run('document.querySelector("#avatar-preview").click()');
-  assert(await second.run('document.querySelector("#avatar-dialog").open && !document.querySelector("#avatar-settings").hidden'));
+  assert(await second.run('document.querySelector("#avatar-dialog").open && !document.querySelector("#avatar-settings").hidden && !document.querySelector("#settings-dialog").open'));
   await second.run(`(async()=>{const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;canvas.getContext('2d').fillRect(32,32,64,64);const blob=await new Promise(r=>canvas.toBlob(r));const dt=new DataTransfer();dt.items.add(new File([blob],'avatar.png',{type:'image/png'}));const input=document.querySelector('#avatar-file');input.files=dt.files;input.dispatchEvent(new Event('change'));})()`);
   await second.until('document.querySelector("#avatar-status").textContent.includes("已保存")');
   assert.equal(uploads, 1);
   await second.until('document.querySelector(".portrait").src.startsWith("blob:")');
   await main.until('document.querySelector(".account-card-avatar").src.startsWith("blob:")');
-  await second.run('document.querySelector("#avatar-close").click();document.querySelector("[data-sign-out]").click()');
+  const signOut = () => second.run('document.querySelector("#account-settings").click();document.querySelector("#settings-dialog [data-sign-out]").click()');
+  await second.run('document.querySelector("#avatar-close").click()');
+  await signOut();
   await main.until('!document.querySelector("#login").hidden && document.querySelector("#account-card").hidden');
   assert(await second.run('document.querySelector("#name").textContent === "访客" && document.querySelector(".portrait").getAttribute("src") === "assets/default-avatar.png"'));
   await main.navigate('index.html');
@@ -146,11 +168,15 @@ async function connect(id) {
   const emailCount = sends;
   await main.run('document.querySelector("#login-email").value="test@example.com";document.querySelector("#login-password").value="WrongPass123";document.querySelector("#login").requestSubmit()');
   await main.until('document.querySelector("[data-auth-status]").textContent.includes("邮箱或密码有误")');
+  delete account.user_metadata.password_configured;
   await main.run('document.querySelector("#login-password").value="OriginalPass123";document.querySelector("#login").requestSubmit()');
-  await main.until('document.querySelector("#login").hidden');
+  await main.until('document.querySelector("#login").hidden && document.querySelector("#login").getAttribute("aria-busy") === "false"');
+  assert.equal(account.user_metadata.password_configured, true);
   assert.equal(sends, emailCount);
   assert.equal(signupSends + recoverySends, 0);
-  await main.run('document.querySelector("#account-card [data-sign-out]").click()');
+  assert(await main.run('!document.querySelector("#account-card [data-sign-out]")'));
+  await second.until('document.querySelector("#account-login").hidden');
+  await signOut();
   await main.until('!document.querySelector("#login").hidden && document.querySelector("#login").getAttribute("aria-busy") === "false"');
 
   await main.run('document.querySelector(\'[data-login-mode="signup"]\').click();document.querySelector("#login-email").value="test@example.com";document.querySelector("#login-password").value="SignupPass123";document.querySelector("#login-password-confirm").value="MismatchPass123";document.querySelector("#login").requestSubmit()');
@@ -168,7 +194,8 @@ async function connect(id) {
   assert.equal(signupSends, 1);
   await main.run('document.querySelector("#login-code").value="123456";document.querySelector("#login").requestSubmit()');
   await main.until('document.querySelector("#login").hidden');
-  await main.run('document.querySelector("#account-card [data-sign-out]").click()');
+  await second.until('document.querySelector("#account-login").hidden');
+  await signOut();
   await main.until('!document.querySelector("#login").hidden && document.querySelector("#login").getAttribute("aria-busy") === "false"');
 
   await main.run('Date.now=()=>window.actualNow()+122000;document.querySelector(\'[data-login-mode="recovery"]\').click();document.querySelector("#login-email").value="test@example.com";document.querySelector("#login").requestSubmit()');
@@ -177,6 +204,8 @@ async function connect(id) {
   await main.run('document.querySelector("#login-code").value="123456";document.querySelector("#login").requestSubmit()');
   await main.until('document.querySelector("#login-title").textContent === "设置新密码" && document.querySelector("#login").getAttribute("aria-busy") === "false"');
   assert(await main.run('!document.querySelector("#login").hidden && document.querySelector("#account-card").hidden && document.querySelector("#login-code").value === ""'));
+  await main.run('document.querySelector(\'[aria-controls="login-password-confirm"]\').click()');
+  assert(await main.run('document.querySelector("#login-password-confirm").type === "text" && document.querySelector("#login-password").type === "password"'));
   await main.run('document.querySelector("#login-password").value="RecoveryPass123";document.querySelector("#login-password-confirm").value="RecoveryPass123";document.querySelector("#login").requestSubmit()');
   await main.until('document.querySelector("#login").hidden && !document.querySelector("#account-card").hidden');
   assert.equal(passwordUpdates, 2);
@@ -185,6 +214,6 @@ async function connect(id) {
   expireUser = true;
   await main.navigate('account.html');
   assert(await main.run('document.querySelector("#name").textContent === "访客"'));
-  console.log('PASS: password sign-in without email; OTP fallback; password setup; signup, resend and recovery; session restoration and logout; private avatar upload; mobile layout. Mock API only.');
+  console.log('PASS: password sign-in without email; OTP fallback; password help, setup and visibility; nickname and avatar settings; signup, resend and recovery; session restoration and logout; mobile layout. Mock API only.');
   await main.send('Browser.close');
 })().catch(error => { console.error(error); process.exitCode=1; }).finally(() => { sockets.forEach(socket=>socket.close()); browser.kill(); });

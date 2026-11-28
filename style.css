@@ -28,7 +28,7 @@ input{font:inherit;border:0;background:#eee;padding:.85rem 1.3rem;border-radius:
 #login input,#login button{width:100%;text-align:center;margin-bottom:.65rem}
 #account-card{box-shadow:0 3px 24px #0003;border-radius:18px;min-height:clamp(340px,35vw,465px);padding:2rem;display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;overflow-wrap:anywhere;min-width:0}
 #account-card h2{font-size:clamp(1.45rem,2.3vw,2rem)}
-#account-card .pill,#account-card button{margin:.3rem 0;width:100%}
+#account-card .pill{margin:.3rem 0;width:100%}
 .account-card-avatar{border-radius:50%;object-fit:cover;background:transparent}
 .auth-status{font-size:.875rem;line-height:1.6;color:#666;margin:.75rem 0;max-width:100%}
 .auth-status:empty{display:none}
@@ -61,10 +61,11 @@ button{background:white;margin:.1rem;padding:.4rem 1.45rem}
 .profile > div{min-width:0;overflow-wrap:anywhere}
 .portrait-button{display:block;flex-shrink:0;width:6rem;height:6rem;margin:0;padding:0;border:0;border-radius:50%;background:transparent}
 .portrait{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}
-.avatar-dialog{width:min(440px,calc(100% - 2rem));max-height:calc(100dvh - 2rem);padding:1.5rem;border:1px solid #e5e5e5;border-radius:16px;background:#fff;color:#101010;box-shadow:0 24px 80px #0003;overflow:auto}
-.avatar-dialog::backdrop{background:rgba(12,12,14,.34);backdrop-filter:blur(8px)}
-.avatar-dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:1rem}
-.avatar-dialog-heading h2{margin:0;font-size:1.25rem}
+.account-dialog{width:min(440px,calc(100% - 2rem));max-height:calc(100dvh - 2rem);padding:1.5rem;border:1px solid #e5e5e5;border-radius:16px;background:#fff;color:#101010;box-shadow:0 24px 80px #0003;overflow:auto}
+.account-dialog::backdrop{background:rgba(12,12,14,.34);backdrop-filter:blur(8px)}
+.account-dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.account-dialog-heading h2{margin:0;font-size:1.25rem}
+#settings-dialog .account-dialog-heading{margin-bottom:.75rem}
 .avatar-large{display:block;width:min(256px,100%);height:auto;aspect-ratio:1;object-fit:cover;border-radius:50%;margin:1.5rem auto;background:transparent}
 #avatar-login{margin:1rem 0 0;text-align:center}
 #avatar-settings { margin-block:1rem 2rem }
@@ -72,13 +73,31 @@ button{background:white;margin:.1rem;padding:.4rem 1.45rem}
 #avatar-file { max-width:100%; border-radius:8px; font-size:.875rem }
 #avatar-hint,#avatar-status { margin:.5rem 0; font-size:.875rem; color:#666 }
 .account-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem }
+.settings-button,#password-help{margin:0;padding:.4rem 1rem;border-color:#ddd}
+.settings-button:hover,#password-help:hover{background:#f3f3f3}
 .icon-button { display:grid; place-items:center; width:40px; height:40px; margin:0; padding:0; border:0; border-radius:50%; color:inherit; background:transparent }
 .icon-button:hover,.icon-button[aria-expanded="true"] { background:#f3f3f3 }
 .orders{border:1px solid #bbb;border-radius:1.5rem;padding:2rem}
-.password-settings{max-width:28rem;margin:1.5rem 0}
-.password-settings summary{width:fit-content;border:1px solid #bbb;border-radius:99px;padding:.4rem 1.2rem;color:inherit}
-.password-settings form{display:grid;gap:.55rem;padding:1rem 0}
-.password-settings form button{justify-self:start;margin-top:.35rem}
+.settings-section,.settings-row{border:0;border-top:1px solid #e8e8e8}
+.settings-row,.settings-section summary{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:48px;margin:0;padding:.65rem .5rem;border-radius:0;text-align:left;color:inherit}
+.settings-row:hover,.settings-section summary:hover{background:#f6f6f6;text-decoration:none}
+.settings-section summary::-webkit-details-marker{display:none}
+.settings-section summary::after,.settings-row:not(.settings-sign-out)::after{content:"";width:.42rem;height:.42rem;margin-right:.25rem;border:solid #6b6b6b;border-width:0 1.5px 1.5px 0;transform:rotate(-45deg)}
+.settings-section[open] summary::after{transform:rotate(45deg)}
+.settings-sign-out{color:#a02323}
+.settings-section form{display:grid;gap:.55rem;padding:.5rem .5rem 1rem}
+.settings-section form>button{justify-self:start;margin:.35rem 0 0}
+.settings-section label{font-size:.9rem}
+.password-field{position:relative}
+#login .password-field{margin-bottom:.65rem}
+.password-field input,#login .password-field input{width:100%;margin:0;padding-inline:2.9rem}
+.password-field .password-toggle,#login .password-toggle{position:absolute;inset:0 .2rem 0 auto;display:grid;place-items:center;width:44px;margin:0;padding:0;border:0;background:transparent;color:#555}
+.password-field input::-ms-reveal{display:none}
+.password-field .password-toggle:hover,#login .password-toggle:hover{color:#101010}
+.password-toggle:focus-visible{outline-offset:-4px}
+.password-toggle::before{content:"";width:20px;height:20px;background:currentColor;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z'/%3E%3Ccircle cx='12' cy='12' r='2.5'/%3E%3C/svg%3E") center/contain no-repeat}
+.password-toggle[aria-pressed="true"]::after{content:"";position:absolute;top:50%;left:50%;width:21px;height:1.5px;background:currentColor;box-shadow:0 1px #eee;transform:translate(-50%,-50%) rotate(-45deg)}
+#password-help-message{margin:1rem 0;line-height:1.65}
 article{max-width:48rem;margin:3rem auto}
 article h1{margin-top:1em}#results{margin:2rem 0}
 [hidden]{display:none!important}
@@ -198,7 +217,7 @@ header .login { margin-left:auto; padding:.4rem 1.15rem; border:0; font-size:.95
 header .avatar { display:grid; place-items:center; width:40px; height:40px; flex-shrink:0; border-radius:50% }
 header .avatar:hover { background:#f3f3f3 }
 header .avatar img { display:block; width:32px; height:32px; object-fit:cover; border-radius:50% }
-.search-open,.avatar-open { overflow:hidden }
+.search-open,html:has(.account-dialog[open]) { overflow:hidden }
 html { scrollbar-gutter:stable }
 .search-dialog { width:min(680px,calc(100% - 2rem)); max-height:calc(100dvh - 2rem); margin:clamp(1rem,12vh,140px) auto 1rem; padding:0; border:1px solid #e5e5e5; border-radius:16px; background:#fff; color:#101010; box-shadow:0 24px 80px #0003; overflow:auto }
 .search-dialog::backdrop { background:rgba(12,12,14,.34); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px) }

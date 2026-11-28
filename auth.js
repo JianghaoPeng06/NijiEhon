@@ -7,13 +7,19 @@
   const loginEmail = $('#login-email');
   const loginPassword = $('#login-password');
   const loginPasswordConfirm = $('#login-password-confirm');
+  const loginPasswordField = loginPassword?.closest('.password-field');
+  const loginConfirmField = loginPasswordConfirm?.closest('.password-field');
   const loginCode = $('#login-code');
   const resendButton = $('#resend-code');
   const passwordSettings = $('#password-settings');
   const passwordForm = $('#password-settings-form');
   const passwordStatus = $('#password-status');
+  const passwordHelp = $('#password-help');
+  const settings = $('#settings-dialog');
+  const settingsButton = $('#account-settings');
+  const profileForm = $('#profile-settings-form');
+  const nickname = $('#account-nickname');
   const footerLogin = $('footer a[href="index.html#login"]');
-  const dialog = $('#avatar-dialog');
   const defaultAvatar = 'assets/default-avatar.png';
   const loginViews = {
     password: { title: '登录以使用完整功能', hint: '使用邮箱和密码登录', submit: '登录' },
@@ -23,7 +29,7 @@
   };
   let client, user = null, ready = false, busy = false, sentEmail = '', resendAt = 0;
   let loginMode = 'password', recoveryUserId = '';
-  let avatarObjectUrl, avatarRevision = 0, avatarSignature = '', returnFocus;
+  let avatarObjectUrl, avatarRevision = 0, avatarSignature = '';
   let authRevision = 0;
 
   // Old demo data must never grant a real session.
@@ -52,6 +58,16 @@
     resendButton.disabled = !ready || !client || busy || seconds > 0;
     resendButton.textContent = seconds ? `${seconds} 秒后重发` : '重新发送验证码';
   }
+  function showPassword(button, visible) {
+    document.getElementById(button.getAttribute('aria-controls')).type = visible ? 'text' : 'password';
+    button.setAttribute('aria-pressed', String(visible));
+  }
+  function concealPasswords(container) {
+    container?.querySelectorAll('.password-toggle[aria-pressed="true"]').forEach(button => showPassword(button, false));
+  }
+  document.querySelectorAll('.password-toggle').forEach(button => {
+    button.addEventListener('click', () => showPassword(button, button.getAttribute('aria-pressed') === 'false'));
+  });
   function controls() {
     const disabled = !ready || !client || busy;
     document.querySelectorAll('[data-auth-control]').forEach(node => { node.disabled = disabled; });
@@ -66,15 +82,15 @@
       loginEmail.readOnly = !!sentEmail;
       loginEmail.hidden = resetting;
       loginEmail.disabled = disabled || resetting;
-      loginPassword.hidden = !usePassword;
+      loginPasswordField.hidden = !usePassword;
       loginPassword.disabled = disabled || !usePassword;
       loginPassword.required = usePassword;
       loginPassword.autocomplete = newPassword ? 'new-password' : 'current-password';
       loginPassword.minLength = newPassword ? 8 : 0;
       loginPassword.placeholder = newPassword ? '输入新密码' : '输入密码';
-      loginPasswordConfirm.hidden = !usePassword || !newPassword;
-      loginPasswordConfirm.disabled = disabled || loginPasswordConfirm.hidden;
-      loginPasswordConfirm.required = !loginPasswordConfirm.hidden;
+      loginConfirmField.hidden = !usePassword || !newPassword;
+      loginPasswordConfirm.disabled = disabled || loginConfirmField.hidden;
+      loginPasswordConfirm.required = !loginConfirmField.hidden;
       loginCode.required = checkingCode;
       loginCode.disabled = disabled || !checkingCode;
       $('#email-code-step').hidden = !checkingCode;
@@ -89,13 +105,14 @@
       passwordForm.setAttribute('aria-busy', String(busy || !ready));
       passwordForm.querySelectorAll('[data-auth-control]').forEach(node => { node.disabled = disabled || !user; });
     }
-    if ($('#account-edit')) $('#account-edit').disabled = !ready;
+    if (settingsButton) settingsButton.disabled = !ready;
   }
   function clearLogin() {
     loginMode = 'password';
     recoveryUserId = '';
     sentEmail = '';
     form?.reset();
+    concealPasswords(form);
   }
   function setAvatar(source) {
     document.querySelectorAll('[data-user-avatar]').forEach(image => {
@@ -130,12 +147,11 @@
     user = nextUser || null;
     const resetting = !!user && user.id === recoveryUserId;
     if (changedUser) {
-      dialog?.close();
+      document.querySelectorAll('.account-dialog[open]').forEach(dialog => dialog.close());
       if (!resetting) clearLogin();
       if ($('#avatar-status')) $('#avatar-status').textContent = '';
-      if (passwordForm) { passwordForm.reset(); passwordSettings.open = false; passwordStatus.textContent = ''; }
     }
-    const name = user ? (user.user_metadata?.full_name || user.email?.split('@')[0] || '我的账户') : '访客';
+    const name = user ? (user.user_metadata?.nickname || user.user_metadata?.full_name || user.email?.split('@')[0] || '我的账户') : '访客';
     const href = user ? 'account.html' : 'index.html#login';
     for (const link of [$('.login'), footerLogin]) {
       if (link) { link.textContent = user ? '个人中心' : '登录'; link.href = href; }
@@ -146,7 +162,16 @@
     document.querySelectorAll('[data-account-name]').forEach(node => { node.textContent = name; });
     if ($('#name')) $('#name').textContent = name;
     if ($('#email')) $('#email').textContent = user?.email || '';
-    if (passwordSettings) passwordSettings.hidden = !user;
+    if (passwordHelp) {
+      const passwordConfigured = user?.user_metadata?.password_configured;
+      passwordHelp.hidden = !user || passwordConfigured === true;
+      passwordHelp.textContent = passwordConfigured === false ? '现在设置密码' : '密码设置帮助';
+      $('#password-help-message').textContent = passwordConfigured === false
+        ? '你的账号还没有设置密码。请前往个人中心右上角的「设置」设置密码。'
+        : '如果还没有设置密码，请前往个人中心右上角的「设置」设置密码。';
+      passwordSettings.querySelector('summary').textContent = passwordConfigured === true ? '修改密码'
+        : passwordConfigured === false ? '设置密码' : '设置或修改密码';
+    }
     if ($('#password-account-email')) $('#password-account-email').value = user?.email || '';
     document.querySelectorAll('[data-sign-out]').forEach(node => { node.hidden = !user; });
     if ($('#account-login')) $('#account-login').hidden = !!user;
@@ -191,19 +216,20 @@
     if (mode === 'signup' && !sentEmail) {
       const issue = passwordIssue(loginPassword.value, loginPasswordConfirm.value);
       if (issue) { status(issue); return; }
-      result = await client.auth.signUp({ email, password: loginPassword.value });
+      result = await client.auth.signUp({ email, password: loginPassword.value, options: { data: { password_configured: true } } });
     } else if (mode === 'signup') {
       result = await client.auth.resend({ type: 'signup', email });
     } else if (mode === 'recovery') {
       result = await client.auth.resetPasswordForEmail(email);
     } else {
-      result = await client.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+      result = await client.auth.signInWithOtp({ email, options: { shouldCreateUser: true, data: { password_configured: false } } });
     }
     if (result.error) throw result.error;
     if (mode === 'signup' && result.data.session) { signedIn(result.data.user); return; }
     if (loginMode !== mode || user) return;
     sentEmail = email; resendAt = Date.now() + 60000;
     loginPassword.value = ''; loginPasswordConfirm.value = ''; loginCode.value = '';
+    concealPasswords(form);
     status(mode === 'recovery'
       ? '如果此邮箱已有账号，重置验证码将发送到该邮箱。'
       : '请查收邮箱验证码，也可检查垃圾邮件。');
@@ -216,13 +242,17 @@
         const { data, error } = await client.auth.signInWithPassword({ email: loginEmail.value.trim(), password: loginPassword.value });
         if (error) throw error;
         signedIn(data.user);
+        if (data.user.user_metadata?.password_configured !== true) {
+          // A successful password login can confirm the display hint for older accounts.
+          await client.auth.updateUser({ data: { password_configured: true } }).catch(() => {});
+        }
         return;
       }
       if (recoveryUserId) {
         if (user?.id !== recoveryUserId) return;
         const issue = passwordIssue(loginPassword.value, loginPasswordConfirm.value);
         if (issue) { status(issue); return; }
-        const { data, error } = await client.auth.updateUser({ password: loginPassword.value });
+        const { data, error } = await client.auth.updateUser({ password: loginPassword.value, data: { password_configured: true } });
         if (error) throw error;
         signedIn(data.user, '密码已重置，登录成功。');
         return;
@@ -255,6 +285,23 @@
     controls(); status(''); loginEmail.focus();
   }));
   if (form) setInterval(updateResend, 1000);
+  profileForm?.addEventListener('submit', event => {
+    event.preventDefault();
+    const currentUser = user;
+    if (!currentUser) return;
+    const profileStatus = $('#profile-status');
+    const report = message => { if (user?.id === currentUser.id) profileStatus.textContent = message; };
+    action(async () => {
+      const value = nickname.value.trim();
+      if (!value) { report('请输入昵称。'); return; }
+      const { data, error } = await client.auth.updateUser({ data: { nickname: value } });
+      if (error) throw error;
+      if (user?.id !== currentUser.id) return;
+      nickname.value = value;
+      render(data.user);
+      report('昵称已保存。');
+    }, report);
+  });
   passwordForm?.addEventListener('submit', event => {
     event.preventDefault();
     const currentUser = user;
@@ -264,46 +311,73 @@
       const password = $('#account-password').value;
       const issue = passwordIssue(password, $('#account-password-confirm').value);
       if (issue) { report(issue); return; }
-      const { data, error } = await client.auth.updateUser({ password });
+      const { data, error } = await client.auth.updateUser({ password, data: { password_configured: true } });
       if (error) throw error;
       if (user?.id !== currentUser.id) return;
       render(data.user);
       passwordForm.reset();
+      concealPasswords(passwordForm);
       $('#password-account-email').value = data.user.email || '';
       report('密码已保存，下次可以使用邮箱和密码登录。');
     }, message => { if (user?.id === currentUser.id) report(message); });
   });
-  document.querySelectorAll('[data-sign-out]').forEach(button => button.addEventListener('click', () => action(async () => {
-    const { error } = await client.auth.signOut({ scope: 'local' });
-    if (error) throw error;
-    render(null); status('已退出登录。');
-    if (form) loginEmail.focus(); else $('#account-login')?.focus();
-  })));
+  document.querySelectorAll('[data-sign-out]').forEach(button => button.addEventListener('click', () => {
+    const settingsStatus = $('#settings-status');
+    action(async () => {
+      const { error } = await client.auth.signOut({ scope: 'local' });
+      if (error) throw error;
+      render(null); status('已退出登录。');
+      if (form) loginEmail.focus(); else $('#account-login')?.focus();
+    }, settingsStatus ? message => { settingsStatus.textContent = message; } : status);
+  }));
   $('#account-back')?.addEventListener('click', () => {
     if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) history.back();
     else location.href = 'index.html';
   });
-  function openAvatar() {
-    if (!dialog || dialog.open) return;
-    returnFocus = document.activeElement;
-    dialog.showModal(); document.documentElement.classList.add('avatar-open');
-    document.querySelectorAll('[aria-controls="avatar-dialog"]').forEach(node => node.setAttribute('aria-expanded', 'true'));
+  function openSettings() {
+    nickname.value = user.user_metadata?.nickname || user.user_metadata?.full_name || '';
+    $('#profile-status').textContent = '';
+    passwordStatus.textContent = '';
+    $('#settings-status').textContent = '';
+    settings.showModal();
   }
-  $('#avatar-preview')?.addEventListener('click', openAvatar);
-  $('#account-edit')?.addEventListener('click', () => {
-    if (!user) { location.href = 'index.html#login'; return; }
-    openAvatar(); $('#avatar-file').focus();
+  document.querySelectorAll('.account-dialog').forEach(dialog => {
+    const triggers = document.querySelectorAll(`[aria-controls="${dialog.id}"]`);
+    triggers.forEach(trigger => trigger.addEventListener('click', () => {
+      if (dialog.open) return;
+      if (dialog === settings && !user) { location.href = 'index.html#login'; return; }
+      if (dialog === settings) openSettings();
+      else dialog.showModal();
+      trigger.setAttribute('aria-expanded', 'true');
+    }));
+    dialog.querySelector('[data-close-dialog]').addEventListener('click', () => dialog.close());
+    let backdropDown = false;
+    const onBackdrop = event => {
+      const box = dialog.getBoundingClientRect();
+      return event.target === dialog && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom);
+    };
+    dialog.addEventListener('pointerdown', event => { backdropDown = onBackdrop(event); });
+    dialog.addEventListener('click', event => { if (backdropDown && onBackdrop(event)) dialog.close(); });
+    dialog.addEventListener('close', () => {
+      if (!dialog.open) triggers.forEach(trigger => trigger.setAttribute('aria-expanded', 'false'));
+    });
   });
-  $('#avatar-close')?.addEventListener('click', () => dialog.close());
-  let backdropDown = false;
-  const outside = event => { const box = dialog.getBoundingClientRect(); return event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom; };
-  dialog?.addEventListener('pointerdown', event => { backdropDown = event.target === dialog && outside(event); });
-  dialog?.addEventListener('click', event => { if (backdropDown && event.target === dialog && outside(event)) dialog.close(); });
-  dialog?.addEventListener('close', () => {
-    document.documentElement.classList.remove('avatar-open');
-    document.querySelectorAll('[aria-controls="avatar-dialog"]').forEach(node => node.setAttribute('aria-expanded', 'false'));
-    returnFocus?.focus({ preventScroll: true });
-  });
+  if (settings) {
+    settings.addEventListener('close', () => {
+      if (settings.open) return;
+      settings.querySelectorAll('details[open]').forEach(section => { section.open = false; });
+      passwordForm.reset();
+      concealPasswords(passwordForm);
+      $('#password-account-email').value = user?.email || '';
+    });
+    $('#go-to-password-settings').addEventListener('click', () => {
+      if (!user) return;
+      $('#password-help-dialog').close();
+      settingsButton.click();
+      passwordSettings.open = true;
+      $('#account-password').focus();
+    });
+  }
   $('#avatar-file')?.addEventListener('change', async event => {
     const file = event.target.files[0], currentUser = user;
     if (!file || !currentUser || !client) return;
