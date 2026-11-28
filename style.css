@@ -247,7 +247,7 @@ main > section[id], #login { scroll-margin-top: 8rem }
 #cancel-recovery button { padding-inline: .75rem }
 #account-card { justify-items: start; align-content: center; min-height: 16rem }
 #account-card .pill { min-height: var(--form-size); width: 100% }
-.account-card-avatar { display: block; border-radius: 50%; object-fit: cover }
+.account-card-avatar { display: block; justify-self: center; border-radius: 50%; object-fit: cover }
 .password-field { position: relative }
 .password-field input { padding-inline-end: 3.25rem }
 .password-toggle {

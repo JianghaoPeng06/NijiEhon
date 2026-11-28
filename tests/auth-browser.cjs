@@ -308,6 +308,12 @@ async function connect(id) {
   assert(await main.run('document.querySelector("#account-card").hidden'));
   await main.run('document.querySelector("#login-code").value="123456";document.querySelector("#login").requestSubmit()');
   await main.until('document.querySelector("#login").hidden && !document.querySelector("#account-card").hidden');
+  const homeAvatarCentered = `(() => {
+    const card = document.querySelector("#account-card").getBoundingClientRect();
+    const avatar = document.querySelector(".account-card-avatar").getBoundingClientRect();
+    return avatar.width > 0 && Math.abs((card.left + card.right) - (avatar.left + avatar.right)) < 1;
+  })()`;
+  assert(await main.run(homeAvatarCentered), 'default avatar is centered in the welcome card on desktop');
   const secondId = (await main.send('Target.createTarget', { url: 'about:blank' })).targetId;
   const second = await connect(secondId);
   await second.navigate('account.html');
@@ -354,6 +360,9 @@ async function connect(id) {
   assert.equal(uploads, 1);
   await second.until('document.querySelector(".portrait").src.startsWith("blob:")');
   await main.until('document.querySelector(".account-card-avatar").src.startsWith("blob:")');
+  await main.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  assert(await main.run(homeAvatarCentered), 'custom avatar is centered in the welcome card on mobile');
+  await main.send('Emulation.clearDeviceMetricsOverride');
   const signOut = () => second.run('document.querySelector("#account-settings").click();document.querySelector("#settings-dialog [data-sign-out]").click()');
   await second.run('document.querySelector("#avatar-close").click()');
   await signOut();
