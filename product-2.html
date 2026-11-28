@@ -13,6 +13,7 @@
 <script defer src="auth.js"></script>
 <script defer src="site.js">
 </script>
+<script defer src="product.js"></script>
 </head>
 <body>
 <header>
@@ -37,14 +38,30 @@
 <a class="avatar" href="account.html" aria-label="个人中心（未登录）"><img data-user-avatar src="assets/default-avatar.png" width="32" height="32" alt=""></a>
 </header>
 <main>
-<article>
+<article class="product-detail">
+<div class="product-visual"><img class="product-image" src="assets/placeholders/product-apple.jpg" alt="Apple 账户" loading="lazy" decoding="async"></div>
+<div class="product-information">
+<p class="product-kicker">多地区 · 账户</p>
 <h1>Apple 账户</h1>
-<p class="article-meta">多地区 · 账户</p>
-<p>了解账户地区、恢复方式与付款资料。</p>
-<img class="content-cover" src="assets/placeholders/product-apple.jpg" alt="" loading="lazy" decoding="async">
-<div class="content-body"></div>
-<p class="content-price">价格待公布</p><div class="content-actions"><button class="pill dark" type="button" disabled>购买（暂未开放）</button><a class="pill" href="https://account.apple.com/">前往官方网站</a></div>
+<p class="product-price"><span>样例价格</span> USD 2.99 / 份</p>
+<p class="product-intro">一份 Apple 账户设置资料示例，涵盖账户地区、付款方式和账户恢复准备。</p>
+<section class="product-description"><h2>商品说明</h2><div class="content-body"><p>建议用自己的电子邮箱创建和维护 Apple 账户。开通前先核对所在地区支持的付款方式和服务。</p>
+<p>准备好可信电话号码，并记下恢复账户所需的信息。</p></div></section>
+<p class="product-delivery"><strong>交付方式</strong> 电子查阅资料（交付示例）</p>
+<p class="product-notice"><strong>购买须知</strong> 此商品样例仅演示电子资料交付。账户创建、登录和付款由你在 Apple 官网自行完成。</p>
+<div class="content-actions"><button class="pill dark" type="button" data-buy-product aria-haspopup="dialog" aria-controls="product-purchase">购买</button><a class="pill" href="https://account.apple.com/">前往官方网站</a></div>
+</div>
 </article>
+<dialog class="purchase-dialog" id="product-purchase" aria-labelledby="purchase-title" data-currency="USD">
+<form method="dialog" class="purchase-panel">
+<div class="purchase-heading"><div><h2 id="purchase-title">选择购买选项</h2><p>Apple 账户</p></div><button type="submit" formnovalidate class="icon-button" aria-label="关闭">×</button></div>
+<label class="purchase-field">规格<select id="purchase-spec" autofocus><option value="0" data-price="2.99">账户设置查阅资料</option></select></label>
+<div class="purchase-field"><label for="purchase-quantity">数量</label><div class="purchase-quantity"><button type="button" data-quantity-step="-1" aria-label="减少数量">−</button><input id="purchase-quantity" type="number" value="1" min="1" max="99" step="1" inputmode="numeric"><button type="button" data-quantity-step="1" aria-label="增加数量">+</button></div></div>
+<div class="purchase-total"><span>样例小计</span><output id="purchase-total" aria-live="polite">USD 2.99 / 份</output></div>
+<p class="purchase-note">下单功能暂未开放。</p>
+<button class="pill dark" type="button" disabled>下单</button>
+</form>
+</dialog>
 </main>
 <footer id="footer" aria-label="页脚">
 <nav class="footer-crumb" aria-label="当前位置"><a href="index.html">首页</a> / <a href="products.html">产品</a> / <span aria-current="page">Apple 账户</span></nav>

@@ -8,8 +8,7 @@
     {
       "slug": "0",
       "title": "美国 Ultra Mobile 电话卡",
-      "summary": "先核对设备兼容性、激活地点和保号条件。",
-      "body": "",
+      "summary": "面向需要了解美国手机号和短信接收方式的读者，整理 Ultra Mobile PayGo 的选购与开卡要点。",
       "image": "assets/placeholders/product-ultra.jpg",
       "imageAlt": "",
       "keywords": "SIM 美国 手机卡",
@@ -18,16 +17,29 @@
       "region": "美国",
       "category": "通信",
       "url": "https://www.ultramobile.com/paygo/",
-      "currency": "CNY",
-      "priceMode": "hidden",
-      "price": "",
-      "unit": ""
+      "currency": "USD",
+      "priceMode": "from",
+      "price": "5.99",
+      "unit": "张",
+      "variants": [
+        {
+          "name": "实体 SIM · 基础示例",
+          "price": ""
+        },
+        {
+          "name": "实体 SIM · 含上手资料示例",
+          "price": "8.99"
+        }
+      ],
+      "body": "下单前先确认手机已解锁，以及机型是否支持目标网络。准备好 SIM 卡编号和可用于注册的邮箱。\n\n开卡地点、漫游及号码保留条件以运营商当期说明为准。",
+      "delivery": "实体 SIM 与电子上手资料（交付示例）",
+      "notice": "规格、价格和交付方式均为页面演示。运营商套餐、充值及漫游费用另见官网。",
+      "sample": true
     },
     {
       "slug": "1",
       "title": "英国 giffgaff 电话卡",
-      "summary": "按使用地点核对漫游、通话及流量条件。",
-      "body": "",
+      "summary": "适合先了解英国号码、激活步骤及日常漫游条件的读者，购买前可按使用地点核对需求。",
       "image": "assets/placeholders/product-giffgaff.jpg",
       "imageAlt": "",
       "keywords": "SIM 英国 手机卡",
@@ -36,16 +48,29 @@
       "region": "英国",
       "category": "通信",
       "url": "https://www.giffgaff.com/",
-      "currency": "CNY",
-      "priceMode": "hidden",
-      "price": "",
-      "unit": ""
+      "currency": "USD",
+      "priceMode": "from",
+      "price": "3.99",
+      "unit": "张",
+      "variants": [
+        {
+          "name": "实体 SIM · 基础示例",
+          "price": ""
+        },
+        {
+          "name": "实体 SIM · 含开卡资料示例",
+          "price": "6.49"
+        }
+      ],
+      "body": "收到卡后，保留包装和卡片编号。激活、充值以及保号规则请以 giffgaff 官方页面为准。\n\n如果主要在英国以外使用，建议先确认当地漫游覆盖与资费。",
+      "delivery": "实体 SIM 与电子开卡资料（交付示例）",
+      "notice": "样例价格仅用于展示选项，不包含运营商资费和充值金额。",
+      "sample": true
     },
     {
       "slug": "2",
       "title": "Apple 账户",
-      "summary": "了解账户地区、恢复方式与付款资料。",
-      "body": "",
+      "summary": "一份 Apple 账户设置资料示例，涵盖账户地区、付款方式和账户恢复准备。",
       "image": "assets/placeholders/product-apple.jpg",
       "imageAlt": "",
       "keywords": "苹果 Apple ID",
@@ -54,16 +79,25 @@
       "region": "多地区",
       "category": "账户",
       "url": "https://account.apple.com/",
-      "currency": "CNY",
-      "priceMode": "hidden",
-      "price": "",
-      "unit": ""
+      "currency": "USD",
+      "priceMode": "fixed",
+      "price": "2.99",
+      "unit": "份",
+      "variants": [
+        {
+          "name": "账户设置查阅资料",
+          "price": ""
+        }
+      ],
+      "body": "建议用自己的电子邮箱创建和维护 Apple 账户。开通前先核对所在地区支持的付款方式和服务。\n\n准备好可信电话号码，并记下恢复账户所需的信息。",
+      "delivery": "电子查阅资料（交付示例）",
+      "notice": "此商品样例仅演示电子资料交付。账户创建、登录和付款由你在 Apple 官网自行完成。",
+      "sample": true
     },
     {
       "slug": "3",
       "title": "云服务器",
-      "summary": "按访问地点、预算和备份需求选择配置。",
-      "body": "",
+      "summary": "用两种入门配置展示机房、内存与预算的选择方式，适合准备部署轻量网站的读者。",
       "image": "assets/placeholders/product-cloud.jpg",
       "imageAlt": "",
       "keywords": "VPS 云主机",
@@ -72,10 +106,24 @@
       "region": "多地区",
       "category": "工具",
       "url": "https://www.digitalocean.com/products/droplets",
-      "currency": "CNY",
-      "priceMode": "hidden",
-      "price": "",
-      "unit": ""
+      "currency": "USD",
+      "priceMode": "from",
+      "price": "4.99",
+      "unit": "月",
+      "variants": [
+        {
+          "name": "基础示例 · 1 vCPU / 1 GB",
+          "price": ""
+        },
+        {
+          "name": "进阶示例 · 2 vCPU / 2 GB",
+          "price": "9.49"
+        }
+      ],
+      "body": "选择机房时考虑访客的主要地区。开通前准备 SSH 公钥，了解备份、流量与快照的计费规则。\n\n实际可选配置、服务地区和账单以云服务商控制台为准。",
+      "delivery": "电子开通说明（交付示例）",
+      "notice": "配置与金额均为演示，流量和快照的计费请以云服务商为准。",
+      "sample": true
     }
   ],
   "articles": [
@@ -83,16 +131,27 @@
       "slug": "0",
       "title": "第一次选择海外号码",
       "summary": "",
-      "body": "列出需要通话、收短信和使用流量的地点。核对运营商覆盖，再比较激活要求、漫游费和号码有效期。",
       "image": "assets/placeholders/guide-number.jpg",
       "imageAlt": "",
       "keywords": "电话卡 SIM 美国 英国",
       "weight": 4,
       "status": "published",
+      "englishTitle": "",
       "author": "NijiEhon",
       "date": "2026-11-27T16:00:00.000Z",
       "read": null,
       "pinned": false,
+      "tags": [
+        "海外号码",
+        "SIM 卡",
+        "运营商"
+      ],
+      "blocks": [
+        {
+          "type": "text",
+          "text": "列出需要通话、收短信和使用流量的地点。核对运营商覆盖，再比较激活要求、漫游费和号码有效期。"
+        }
+      ],
       "related": [
         "0",
         "1"
@@ -102,16 +161,26 @@
       "slug": "1",
       "title": "收到 SIM 卡后如何开始",
       "summary": "",
-      "body": "保留卡套，通过官方入口核对激活步骤。完成后先测试短信与通话，再把号码绑定到常用账户。",
       "image": "assets/placeholders/guide-activation.jpg",
       "imageAlt": "",
       "keywords": "电话卡 激活",
       "weight": 3,
       "status": "published",
+      "englishTitle": "",
       "author": "NijiEhon",
       "date": "2026-11-27T16:00:00.000Z",
       "read": null,
       "pinned": false,
+      "tags": [
+        "SIM 卡",
+        "开卡激活"
+      ],
+      "blocks": [
+        {
+          "type": "text",
+          "text": "保留卡套，通过官方入口核对激活步骤。完成后先测试短信与通话，再把号码绑定到常用账户。"
+        }
+      ],
       "related": [
         "0",
         "1"
@@ -121,16 +190,27 @@
       "slug": "2",
       "title": "开通云服务器前的准备",
       "summary": "",
-      "body": "确认机房、系统和预算。在创建实例前查看流量、快照和闲置资源的收费方式，同时准备 SSH 公钥。",
       "image": "assets/placeholders/guide-cloud.jpg",
       "imageAlt": "",
       "keywords": "服务器 VPS",
       "weight": 2,
       "status": "published",
+      "englishTitle": "",
       "author": "NijiEhon",
       "date": "2026-11-27T16:00:00.000Z",
       "read": null,
       "pinned": false,
+      "tags": [
+        "云服务器",
+        "SSH",
+        "计费"
+      ],
+      "blocks": [
+        {
+          "type": "text",
+          "text": "确认机房、系统和预算。在创建实例前查看流量、快照和闲置资源的收费方式，同时准备 SSH 公钥。"
+        }
+      ],
       "related": [
         "3"
       ]

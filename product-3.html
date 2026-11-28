@@ -13,6 +13,7 @@
 <script defer src="auth.js"></script>
 <script defer src="site.js">
 </script>
+<script defer src="product.js"></script>
 </head>
 <body>
 <header>
@@ -37,14 +38,30 @@
 <a class="avatar" href="account.html" aria-label="个人中心（未登录）"><img data-user-avatar src="assets/default-avatar.png" width="32" height="32" alt=""></a>
 </header>
 <main>
-<article>
+<article class="product-detail">
+<div class="product-visual"><img class="product-image" src="assets/placeholders/product-cloud.jpg" alt="云服务器" loading="lazy" decoding="async"></div>
+<div class="product-information">
+<p class="product-kicker">多地区 · 工具</p>
 <h1>云服务器</h1>
-<p class="article-meta">多地区 · 工具</p>
-<p>按访问地点、预算和备份需求选择配置。</p>
-<img class="content-cover" src="assets/placeholders/product-cloud.jpg" alt="" loading="lazy" decoding="async">
-<div class="content-body"></div>
-<p class="content-price">价格待公布</p><div class="content-actions"><button class="pill dark" type="button" disabled>购买（暂未开放）</button><a class="pill" href="https://www.digitalocean.com/products/droplets">前往官方网站</a></div>
+<p class="product-price"><span>样例价格</span> USD 4.99 起 / 月</p>
+<p class="product-intro">用两种入门配置展示机房、内存与预算的选择方式，适合准备部署轻量网站的读者。</p>
+<section class="product-description"><h2>商品说明</h2><div class="content-body"><p>选择机房时考虑访客的主要地区。开通前准备 SSH 公钥，了解备份、流量与快照的计费规则。</p>
+<p>实际可选配置、服务地区和账单以云服务商控制台为准。</p></div></section>
+<p class="product-delivery"><strong>交付方式</strong> 电子开通说明（交付示例）</p>
+<p class="product-notice"><strong>购买须知</strong> 配置与金额均为演示，流量和快照的计费请以云服务商为准。</p>
+<div class="content-actions"><button class="pill dark" type="button" data-buy-product aria-haspopup="dialog" aria-controls="product-purchase">购买</button><a class="pill" href="https://www.digitalocean.com/products/droplets">前往官方网站</a></div>
+</div>
 </article>
+<dialog class="purchase-dialog" id="product-purchase" aria-labelledby="purchase-title" data-currency="USD">
+<form method="dialog" class="purchase-panel">
+<div class="purchase-heading"><div><h2 id="purchase-title">选择购买选项</h2><p>云服务器</p></div><button type="submit" formnovalidate class="icon-button" aria-label="关闭">×</button></div>
+<label class="purchase-field">规格<select id="purchase-spec" autofocus><option value="0" data-price="4.99">基础示例 · 1 vCPU / 1 GB</option><option value="1" data-price="9.49">进阶示例 · 2 vCPU / 2 GB</option></select></label>
+<div class="purchase-field"><label for="purchase-quantity">数量</label><div class="purchase-quantity"><button type="button" data-quantity-step="-1" aria-label="减少数量">−</button><input id="purchase-quantity" type="number" value="1" min="1" max="99" step="1" inputmode="numeric"><button type="button" data-quantity-step="1" aria-label="增加数量">+</button></div></div>
+<div class="purchase-total"><span>样例小计</span><output id="purchase-total" aria-live="polite">USD 4.99 起 / 月</output></div>
+<p class="purchase-note">下单功能暂未开放。</p>
+<button class="pill dark" type="button" disabled>下单</button>
+</form>
+</dialog>
 </main>
 <footer id="footer" aria-label="页脚">
 <nav class="footer-crumb" aria-label="当前位置"><a href="index.html">首页</a> / <a href="products.html">产品</a> / <span aria-current="page">云服务器</span></nav>

@@ -1,5 +1,22 @@
 const header = document.querySelector("header");
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+for (const frame of document.querySelectorAll('[data-article-html]')) {
+  let observer;
+  const resize = () => {
+    observer?.disconnect();
+    const body = frame.contentDocument?.body;
+    if (!body) return;
+    observer = new ResizeObserver(() => {
+      const height = Math.min(1600, Math.ceil(body.getBoundingClientRect().height));
+      if (height > 0) frame.style.height = `${height}px`;
+    });
+    observer.observe(body);
+  };
+  frame.addEventListener('load', resize);
+  resize();
+}
+
 const menus = [...header.querySelectorAll("nav details")];
 let activeMenu = null;
 let hoverTimer;
@@ -135,13 +152,13 @@ if ("IntersectionObserver" in window) {
 const searchTrigger = header.querySelector(".search");
 const searchItems = [
   // BEGIN ADMIN: search
-  ["guide-0.html","第一次选择海外号码","指南","电话卡 SIM 美国 英国 NijiEhon"],
-  ["guide-1.html","收到 SIM 卡后如何开始","指南","电话卡 激活 NijiEhon"],
-  ["guide-2.html","开通云服务器前的准备","指南","服务器 VPS NijiEhon"],
-  ["product-0.html","美国 Ultra Mobile 电话卡","产品","SIM 美国 手机卡 先核对设备兼容性、激活地点和保号条件。 通信 美国"],
-  ["product-1.html","英国 giffgaff 电话卡","产品","SIM 英国 手机卡 按使用地点核对漫游、通话及流量条件。 通信 英国"],
-  ["product-2.html","Apple 账户","产品","苹果 Apple ID 了解账户地区、恢复方式与付款资料。 账户 多地区"],
-  ["product-3.html","云服务器","产品","VPS 云主机 按访问地点、预算和备份需求选择配置。 工具 多地区"],
+  ["guide-0.html","第一次选择海外号码","指南","电话卡 SIM 美国 英国 NijiEhon 海外号码 SIM 卡 运营商"],
+  ["guide-1.html","收到 SIM 卡后如何开始","指南","电话卡 激活 NijiEhon SIM 卡 开卡激活"],
+  ["guide-2.html","开通云服务器前的准备","指南","服务器 VPS NijiEhon 云服务器 SSH 计费"],
+  ["product-0.html","美国 Ultra Mobile 电话卡","产品","SIM 美国 手机卡 面向需要了解美国手机号和短信接收方式的读者，整理 Ultra Mobile PayGo 的选购与开卡要点。 通信 美国"],
+  ["product-1.html","英国 giffgaff 电话卡","产品","SIM 英国 手机卡 适合先了解英国号码、激活步骤及日常漫游条件的读者，购买前可按使用地点核对需求。 通信 英国"],
+  ["product-2.html","Apple 账户","产品","苹果 Apple ID 一份 Apple 账户设置资料示例，涵盖账户地区、付款方式和账户恢复准备。 账户 多地区"],
+  ["product-3.html","云服务器","产品","VPS 云主机 用两种入门配置展示机房、内存与预算的选择方式，适合准备部署轻量网站的读者。 工具 多地区"],
   // END ADMIN: search
   ["terms.html", "服务条款", "关于", "购买 开通 售后"],
   ["privacy.html", "隐私政策", "关于", "邮箱 会话存储 搜索"],

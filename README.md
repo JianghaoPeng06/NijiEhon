@@ -44,7 +44,7 @@ Windows 双击 [打开后台.cmd](tools/admin/打开后台.cmd) 或桌面上的 
 
 - index.html 按画稿展示访客首页、邮箱卡片、大阪站横幅、产品、研究和声明。访客显示登录卡片，登录后切换成欢迎卡片和个人中心入口，退出后恢复。
 - research.html 展示精选与文章列表，guide-*.html 是正文。
-- products.html 支持地区和类别组合筛选。product-*.html 展示产品资料与已配置价格。购买按钮暂不可用，仍可前往相应官方网站了解详情。
+- products.html 支持地区和类别组合筛选。product-*.html 展示产品资料与价格，购买按钮可打开规格、数量和参考小计弹窗。下单暂未开放。
 - terms.html、privacy.html、statement.html 分别为服务条款、隐私政策、声明的独立文章页。about.html 的旧锚点跳转到相应文章。
 - 顶栏和页脚联系区统一提供带图标及外链箭头的 X（https://x.com/JianghaoPeng）、Telegram（https://t.me/NijiEhon）、邮箱（mailto:pengjasper@icloud.com）；捐赠仍进入站内页面。contact.html 兼容旧链接，打开首页联系菜单。
 - 顶栏搜索在当前页打开悬浮窗口，支持即时筛选、方向键选择、Esc 关闭和 Ctrl/Cmd+K；search.html 兼容旧链接并转到首页搜索浮层。account.html 根据真实会话展示名称、邮箱、头像与退出按钮，访客显示登录提示。
