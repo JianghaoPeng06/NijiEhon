@@ -15,7 +15,7 @@
 </head>
 <body>
 <header>
-<a class="brand" href="index.html">NijiEhon</a>
+<a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">𒀭</span>NijiEhon</a>
 <nav aria-label="主导航">
 <div class="nav-group"><a class="nav-link" href="research.html">研究</a></div>
 <div class="nav-group"><a class="nav-link" href="products.html">产品</a></div>
@@ -30,8 +30,8 @@
 <a class="contact-link" href="mailto:pengjasper@icloud.com" aria-label="邮箱（打开邮件应用）"><svg class="contact-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg><span>邮箱</span><svg class="external-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M7 7h10v10"/></svg></a>
 <a href="donate.html">捐赠</a>
 </div></details></div>
+<div class="nav-group"><button class="nav-link search" type="button" aria-label="搜索" aria-haspopup="dialog" aria-controls="site-search" aria-expanded="false"><span class="search-symbol" aria-hidden="true"></span></button></div>
 </nav>
-<button class="search" type="button" aria-label="搜索" aria-haspopup="dialog" aria-controls="site-search" aria-expanded="false"><span aria-hidden="true"></span></button>
 <a class="login" href="index.html#login">登录</a>
 <a class="avatar" href="account.html" aria-label="个人中心（未登录）"><img data-user-avatar src="assets/default-avatar.png" width="32" height="32" alt=""></a>
 </header>
@@ -40,13 +40,15 @@
 <div>
 <h1>欢迎！<br>国际化的数字生活<br>从这里开始</h1>
 <p>发现境外值得用的产品，了解选择、开通和日常使用的方法。</p>
-<a class="pill dark" href="products.html">探索产品</a> <a class="pill" href="#contact-menu" data-open-contact>和我聊聊</a>
+<div class="hero-actions">
+<a class="pill dark" href="products.html">探索产品</a>
+<a class="pill" href="#contact-menu" data-open-contact>和我聊聊</a>
 </div>
-<form id="login" method="post" aria-busy="true">
+</div>
+<form id="login" class="auth-card" method="post" aria-busy="true">
 <h2 id="login-title">登录以使用完整功能</h2>
-<div>
 <div id="email-login" hidden>
-<p id="login-hint" class="login-divider">使用邮箱和密码登录</p>
+<p id="login-hint" class="login-hint">使用邮箱和密码登录</p>
 <input id="login-email" name="email" type="email" required autocomplete="username" aria-label="电子邮箱" placeholder="输入您的电子邮箱" data-auth-control disabled>
 <div class="password-field">
 <input id="login-password" name="password" type="password" maxlength="72" autocomplete="current-password" aria-label="密码" placeholder="输入密码" data-auth-control disabled>
@@ -61,32 +63,33 @@
 <div class="code-actions"><button id="resend-code" type="button" data-auth-control disabled>重新发送验证码</button><button id="change-email" type="button" data-auth-control disabled>更换邮箱</button></div>
 </div>
 <button id="email-submit" class="dark" type="submit" data-auth-control disabled>登录</button>
-<div id="login-options" class="code-actions login-options">
+<div id="login-options" class="code-actions">
 <button type="button" data-login-mode="password" data-auth-control hidden disabled>密码登录</button>
 <button type="button" data-login-mode="signup" data-auth-control disabled>注册</button>
 <button type="button" data-login-mode="otp" data-auth-control disabled>验证码登录</button>
 <button type="button" data-login-mode="recovery" data-auth-control disabled>找回密码</button>
 </div>
-<div id="cancel-recovery" class="code-actions login-options" hidden>
+<div id="cancel-recovery" class="code-actions" hidden>
 <button type="button" data-sign-out data-auth-control hidden disabled>取消重置并退出</button>
 </div>
 </div>
 <p class="auth-status" data-auth-status role="status" aria-live="polite">正在确认登录状态…</p>
-<small><a href="privacy.html">隐私政策</a></small>
+<small class="login-privacy">继续即表示您确认已知悉 NijiEhon 的<a href="privacy.html">隐私政策</a>。</small>
 <noscript><p>请开启 JavaScript 后登录。</p></noscript>
-</div>
 </form>
-<div id="account-card" hidden>
+<div id="account-card" class="auth-card" hidden>
 <h2>欢迎回来，<span data-account-name></span></h2>
 <img class="account-card-avatar" data-user-avatar src="assets/default-avatar.png" width="72" height="72" alt="我的头像">
-<div><a class="pill dark" href="account.html">进入个人中心</a></div>
+<a class="pill dark" href="account.html">进入个人中心</a>
 <p class="auth-status" data-auth-status role="status"></p>
 </div>
 </section>
 <img class="banner" src="assets/station.jpg" alt="大阪站建筑外景">
 <section>
-<h2>产品：从你需要的开始 <a href="products.html">查看全部产品</a>
-</h2>
+<div class="section-heading">
+<h2>产品：从你需要的开始</h2>
+<a href="products.html">查看全部产品</a>
+</div>
 <div class="grid">
 <a class="tile" href="product-0.html" data-region="美国" data-category="通信">
 <img class="cover photo-placeholder" src="assets/placeholders/product-ultra.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">美国 Ultra Mobile 电话卡</a>
@@ -97,15 +100,23 @@
 </div>
 </section>
 <section>
-<h2>研究 <a href="research.html">查看全部研究</a>
-</h2>
-<div class="rows">
+<div class="section-heading">
+<h2>研究</h2>
+<a href="research.html">查看全部研究</a>
+</div>
+<div class="article-list">
 <a href="guide-0.html">
-<img class="mini photo-placeholder" src="assets/placeholders/guide-number.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">第一次选择海外号码</a>
+<img class="mini photo-placeholder" src="assets/placeholders/guide-number.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">
+<div><span class="article-title">第一次选择海外号码</span><span class="article-meta"><time datetime="2026-11-28">2026 年 11 月 28 日</time> · 约 1 分钟阅读</span></div>
+</a>
 <a href="guide-1.html">
-<img class="mini photo-placeholder" src="assets/placeholders/guide-activation.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">收到 SIM 卡后如何开始</a>
+<img class="mini photo-placeholder" src="assets/placeholders/guide-activation.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">
+<div><span class="article-title">收到 SIM 卡后如何开始</span><span class="article-meta"><time datetime="2026-11-28">2026 年 11 月 28 日</time> · 约 1 分钟阅读</span></div>
+</a>
 <a href="guide-2.html">
-<img class="mini photo-placeholder" src="assets/placeholders/guide-cloud.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">开通云服务器前的准备</a>
+<img class="mini photo-placeholder" src="assets/placeholders/guide-cloud.jpg" alt="" loading="lazy" decoding="async" width="600" height="600">
+<div><span class="article-title">开通云服务器前的准备</span><span class="article-meta"><time datetime="2026-11-28">2026 年 11 月 28 日</time> · 约 1 分钟阅读</span></div>
+</a>
 </div>
 </section>
 <section class="statement">
@@ -138,7 +149,7 @@
 </div>
 </div>
 <div class="footer-bottom">
-<p class="footer-copyright">NijiEhon <span class="copyright-mark">©</span> 2026 <span class="footer-version" aria-label="网站版本 v0.2.0">v0.2.0</span></p>
+<p class="footer-copyright">NijiEhon <span class="copyright-mark">©</span> 2026 <span class="footer-version" aria-label="网站版本 v0.5.0">v0.5.0</span></p>
 <details class="footer-language">
 <summary aria-label="选择语言，当前：简体中文 中国">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg>

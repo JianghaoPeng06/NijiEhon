@@ -330,10 +330,6 @@
       if (form) loginEmail.focus(); else $('#account-login')?.focus();
     }, settingsStatus ? message => { settingsStatus.textContent = message; } : status);
   }));
-  $('#account-back')?.addEventListener('click', () => {
-    if (document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1) history.back();
-    else location.href = 'index.html';
-  });
   function openSettings() {
     nickname.value = user.user_metadata?.nickname || user.user_metadata?.full_name || '';
     $('#profile-status').textContent = '';

@@ -1,4 +1,5 @@
 const header = document.querySelector("header");
+const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const menus = [...header.querySelectorAll("nav details")];
 let activeMenu = null;
 let hoverTimer;
@@ -97,6 +98,39 @@ document.querySelectorAll("fieldset").forEach(group => {
     empty.hidden = cards.some(card => !card.hidden);
   });
 });
+
+// Animate only the first time each below-the-fold element approaches the viewport.
+if ("IntersectionObserver" in window) {
+  const reveals = document.querySelectorAll(
+    "main :is(.banner, .section-heading, .grid > .tile, .article-list > a), main > section:not(.statement) > h2"
+  );
+  const revealObserver = new IntersectionObserver(entries => {
+    const groupCounts = new Map();
+    for (const { target, isIntersecting } of entries) {
+      if (!isIntersecting) continue;
+      revealObserver.unobserve(target);
+      if (prefersReducedMotion.matches || target.matches(":focus-within")) continue;
+      if (target.matches(".tile, .article-list > a")) {
+        const group = target.parentElement;
+        const count = groupCounts.get(group) || 0;
+        if (count) target.style.setProperty("--reveal-delay", `${Math.min(count, 2) * 50}ms`);
+        groupCounts.set(group, count + 1);
+      }
+      target.classList.add("scroll-reveal");
+    }
+  }, { rootMargin: "0px 0px 16px 0px" });
+  for (const element of reveals) {
+    if (element.getBoundingClientRect().top >= window.innerHeight) revealObserver.observe(element);
+  }
+  function clearReveal(event) {
+    if (event.animationName !== "reveal-in") return;
+    event.target.classList.remove("scroll-reveal");
+    event.target.style.removeProperty("--reveal-delay");
+  }
+  document.addEventListener("animationend", clearReveal);
+  document.addEventListener("animationcancel", clearReveal);
+}
+
 // Shared search dialog keeps visitors on the page until they choose a result.
 const searchTrigger = header.querySelector(".search");
 const searchItems = [
@@ -117,9 +151,13 @@ searchDialog.className = "search-dialog";
 searchDialog.setAttribute("aria-label", "站内搜索");
 searchDialog.innerHTML = `
   <div class="search-bar">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
-    <input id="site-search-query" type="search" placeholder="搜索站内内容…" aria-label="搜索站内内容" autocomplete="off" autofocus>
-    <button class="search-close" type="button" aria-label="关闭搜索">Esc</button>
+    <div class="search-field">
+      <span class="search-symbol" aria-hidden="true"></span>
+      <input id="site-search-query" type="search" placeholder="搜索站内内容…" aria-label="搜索站内内容" autocomplete="off" autofocus>
+    </div>
+    <button class="search-close icon-button" type="button" aria-label="关闭搜索" title="关闭搜索">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+    </button>
   </div>
   <div class="search-suggestions">
     <p>搜索产品、指南与关于文章，多个关键词用空格分隔</p>
@@ -216,6 +254,7 @@ if (new URLSearchParams(location.search).has("search")) openSearch();
 
 
 const languageMenu = document.querySelector(".footer-language");
+const footerBottom = languageMenu?.closest(".footer-bottom");
 languageMenu?.querySelector("button").addEventListener("click", () => {
   document.documentElement.lang = "zh-CN";
   languageMenu.open = false;
@@ -234,3 +273,30 @@ languageMenu?.addEventListener("keydown", event => {
 languageMenu?.addEventListener("focusout", event => {
   if (!languageMenu.contains(event.relatedTarget)) languageMenu.open = false;
 });
+
+const backToTop = document.createElement("button");
+backToTop.type = "button";
+backToTop.className = "back-to-top icon-button";
+backToTop.setAttribute("aria-label", "回到顶部");
+backToTop.title = "回到顶部";
+backToTop.hidden = true;
+backToTop.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20V4m-6 6 6-6 6 6"/></svg>';
+document.body.append(backToTop);
+
+function updateBackToTop() {
+  const nearTop = window.scrollY <= Math.min(480, window.innerHeight * 0.6);
+  if (backToTop.hidden !== nearTop) backToTop.hidden = nearTop;
+  if (!nearTop && footerBottom) {
+    const clearance = Math.max(0, Math.ceil(window.innerHeight - footerBottom.getBoundingClientRect().top));
+    backToTop.style.setProperty("--footer-clearance", clearance + "px");
+  }
+}
+
+window.addEventListener("scroll", updateBackToTop, { passive: true });
+window.addEventListener("resize", updateBackToTop);
+window.addEventListener("pageshow", updateBackToTop);
+backToTop.addEventListener("click", () => {
+  header.querySelector(".brand").focus({ preventScroll: true });
+  window.scrollTo({ top: 0, behavior: prefersReducedMotion.matches ? "instant" : "smooth" });
+});
+updateBackToTop();

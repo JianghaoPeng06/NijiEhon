@@ -87,13 +87,28 @@ async function connect(id) {
         else { type = 'image/png'; body = fs.readFileSync(path.join(__dirname, '../assets/default-avatar.png')); }
       } else { code = 404; body = { error: 'Unmocked endpoint' }; }
       const raw = Buffer.isBuffer(body) ? body : Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
-      await send('Fetch.fulfillRequest', { requestId, responseCode: code, responseHeaders: [ {name:'X-Supabase-Api-Version',value:'2024-01-01'}, {name:'Access-Control-Expose-Headers',value:'X-Supabase-Api-Version'}, { name: 'Content-Type', value: type }, { name: 'Access-Control-Allow-Origin', value: origin }, { name: 'Access-Control-Allow-Headers', value: '*' }, { name: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' } ], body: raw.toString('base64') });
+      await send('Fetch.fulfillRequest', { requestId, responseCode: code, responseHeaders: [ {name:'X-Supabase-Api-Version',value:'2024-01-01'}, {name:'Access-Control-Expose-Headers',value:'X-Supabase-Api-Version'}, { name: 'Content-Type', value: type }, { name: 'Cache-Control', value: 'no-store' }, { name: 'Access-Control-Allow-Origin', value: origin }, { name: 'Access-Control-Allow-Headers', value: '*' }, { name: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' } ], body: raw.toString('base64') });
     }
   };
   await send('Fetch.enable', { patterns: [ { urlPattern: '*auth-config.js' }, { urlPattern: 'https://fixture.supabase.co/*' } ] });
   const run = async expression => { const value = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }); if (value.exceptionDetails) throw Error(JSON.stringify(value.exceptionDetails)); return value.result.value; };
   const until = async expression => { for (let i=0; i<80; i++) { if (await run(expression)) return; await sleep(100); } throw Error('Timed out: '+expression+'; status='+await run('document.querySelector("[data-auth-status]").textContent')); };
-  const navigate = async page => { await send('Page.navigate', { url: origin + '/' + page }); await until('document.readyState === "complete" && !!document.querySelector("[data-auth-status]") && !document.querySelector("[data-auth-status]").textContent.includes("正在确认")'); };
+  const navigate = async page => {
+    const url = origin + '/' + page;
+    const { loaderId, errorText } = await send('Page.navigate', { url });
+    assert(!errorText, errorText);
+    if (loaderId) {
+      let loaded;
+      for (let attempt = 0; attempt < 80 && loaded !== loaderId; attempt++) {
+        loaded = (await send('Page.getFrameTree')).frameTree.frame.loaderId;
+        if (loaded !== loaderId) await sleep(100);
+      }
+      assert.equal(loaded, loaderId, 'navigation committed for ' + page);
+    }
+    await until(`location.href === ${JSON.stringify(url)} && document.readyState === "complete"
+      && !!document.querySelector("[data-auth-status]") && !document.querySelector("[data-auth-status]").textContent.includes("正在确认")`);
+    await run('document.fonts.ready.then(() => true)');
+  };
   return { send, run, until, navigate };
 }
 (async () => {
@@ -103,12 +118,184 @@ async function connect(id) {
   await main.navigate('index.html');
   assert(await main.run('document.querySelector("#email-submit").disabled && document.querySelector("[data-auth-status]").textContent.includes("即将开放")'));
   configured = true;
+  await main.send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 860, deviceScaleFactor: 1, mobile: false });
   await main.navigate('index.html');
   await main.run('sessionStorage.setItem("nijiehon.demoEmail","fake@example.com")');
   await main.navigate('index.html');
   assert(await main.run('!document.querySelector("#login").hidden && document.querySelector("#account-card").hidden && !sessionStorage.getItem("nijiehon.demoEmail")'));
   assert(await main.run('!document.querySelector("#login-password").parentElement.hidden && document.querySelector("#email-code-step").hidden'));
+  assert(await main.run(`(async () => {
+    const mark = document.querySelector(".brand-mark");
+    const [font] = await document.fonts.load('400 22px "Noto Sans Cuneiform"', mark.textContent);
+    const name = document.createRange();
+    name.selectNode(mark.nextSibling);
+    return mark.textContent === "𒀭" && font?.status === "loaded"
+      && mark.getBoundingClientRect().right < name.getBoundingClientRect().left;
+  })()`), 'the locally hosted logo renders to the left of NijiEhon');
+  const equalLoginControls = `(() => {
+    const email = document.querySelector("#login-email");
+    const submit = document.querySelector("#email-submit");
+    const controls = [email, submit].map(node => node.getBoundingClientRect());
+    return controls.every(box => Math.abs(box.height - 48) < .1 && Math.abs(box.width - controls[0].width) < .1)
+      && [email, submit].every(node => parseFloat(getComputedStyle(node).borderTopLeftRadius) >= 24);
+  })()`;
+  const alignedLoginOptions = `(() => {
+    const submit = document.querySelector("#email-submit").getBoundingClientRect();
+    const choices = [...document.querySelectorAll("#login-options button:not([hidden])")].map(node => node.getBoundingClientRect());
+    return choices.length === 3 && choices[0].left === submit.left && Math.abs(choices.at(-1).right - submit.right) < 1
+      && choices.every(box => box.y === choices[0].y && box.height === 44 && Math.abs(box.width - choices[0].width) < 1);
+  })()`;
+  const point = (page, selector) => page.run(`(() => {
+    const box = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  })()`);
+  assert(await main.run(equalLoginControls), 'desktop form controls share pill dimensions');
+  assert(await main.run(alignedLoginOptions), 'desktop login options fill the same width');
+  assert(await main.run(`(() => {
+    const controls = [...document.querySelectorAll("header nav .nav-group > :is(.nav-link,details)")]
+      .map(node => node.querySelector("summary") || node);
+    const boxes = controls.map(node => node.getBoundingClientRect());
+    const search = controls.at(-1);
+    return controls.length === 5 && search.classList.contains("search") && search.querySelector(".search-symbol")
+      && search.getAttribute("aria-label") === "搜索" && !search.textContent.trim()
+      && boxes.every(box => box.height === 44 && box.y === boxes[0].y)
+      && controls.every(node =>
+        getComputedStyle(node).borderRadius === "0px" && getComputedStyle(node).backgroundColor === "rgba(0, 0, 0, 0)");
+  })()`), 'search aligns with the four main navigation items');
+  assert(await main.run(`(() => {
+    const poster = document.querySelector(".banner").getBoundingClientRect();
+    const articles = [...document.querySelectorAll(".article-list > a")];
+    return Math.abs(poster.width / poster.height - 16 / 9) < 0.01
+      && articles.length === 3 && articles.every(link => {
+        const image = link.querySelector(".mini").getBoundingClientRect();
+        return Math.abs(image.width - image.height) < 1 && getComputedStyle(link).borderBottomWidth === "0px"
+          && !!link.querySelector("time[datetime='2026-11-28']");
+      });
+  })()`), 'poster ratio, square article thumbnails and dates are present');
+  assert(await main.run(`(() => {
+    const primary = getComputedStyle(document.querySelector(".hero-actions .dark"));
+    const login = getComputedStyle(document.querySelector("header .login"));
+    return login.color === "rgb(255, 255, 255)" && login.backgroundColor === primary.backgroundColor
+      && login.borderRadius === primary.borderRadius
+      && getComputedStyle(document.querySelector(".login-privacy")).textAlign === "center";
+  })()`), 'header login uses the primary style and the privacy notice is centered');
+  const researchPage = await (await fetch(origin + '/research.html')).text();
+  const featured = researchPage.match(/<div class="grid">([\s\S]*?)<\/div>\s*<section>/)?.[1];
+  assert.equal(featured?.match(/class="article-meta"/g)?.length, 3, 'all featured research cards show dates and reading times');
+  assert(await main.run('getComputedStyle(document.querySelector("header")).animationName === "header-in"'));
+  const productCards = '[...document.querySelectorAll(".grid > .tile")]';
+  const revealIsPlaying = 'card => card.getAnimations().some(animation => animation.animationName === "reveal-in")';
+  assert(await main.run(`!${productCards}.some(${revealIsPlaying})`));
+  await main.run('document.querySelector(".grid").scrollIntoView({ block: "center" })');
+  await main.until(`${productCards}.every(${revealIsPlaying})`);
+  assert.deepEqual(await main.run(`${productCards}.map(card => getComputedStyle(card).animationDelay)`), ['0s', '0.05s', '0.1s']);
+  await main.until(`!${productCards}.some(${revealIsPlaying})`);
+  await main.run(`(async () => {
+    window.scrollTo(0, 0);
+    await new Promise(requestAnimationFrame);
+    document.querySelector(".grid").scrollIntoView({ block: "center" });
+    await new Promise(requestAnimationFrame);
+  })()`);
+  assert(await main.run(`!${productCards}.some(${revealIsPlaying})`), 'product cards reveal only once when scrolled into view');
+  await main.run('window.scrollTo(0, 0)');
+  const hover = async selector =>
+    main.send('Input.dispatchMouseEvent', { type: 'mouseMoved', ...await point(main, selector) });
+  const linkColor = selector => `getComputedStyle(document.querySelector(${JSON.stringify(selector)})).color`;
+  const mutedColor = 'rgb(85, 85, 92)';
+  const submenuLink = '#contact-menu a[href="donate.html"]';
+  await hover('#contact-menu summary');
+  await main.until('document.querySelector("#contact-menu").open');
+  await main.until('getComputedStyle(document.body, "::before").opacity === "1"');
+  assert(await main.run(`(() => {
+    const header = document.querySelector("header");
+    const panel = document.querySelector("#contact-menu > div").getBoundingClientRect();
+    const background = getComputedStyle(document.body, "::before");
+    return background.backdropFilter === "blur(7px)" && background.pointerEvents === "auto"
+      && header.clientWidth === document.body.clientWidth && panel.width === header.clientWidth;
+  })()`), 'desktop menu spans the viewport above the blurred page');
+  const submenuRest = await main.run(linkColor(submenuLink));
+  assert.notEqual(submenuRest, mutedColor);
+  await hover(submenuLink);
+  await main.until(`${linkColor(submenuLink)} === "${mutedColor}"`);
+  await hover('#contact-menu summary');
+  await main.until(`${linkColor(submenuLink)} === "${submenuRest}"`);
+  await main.run('document.querySelector("#contact-menu summary").click()');
+  assert(await main.run('!document.querySelector("#contact-menu").open'), 'desktop hover menu still accepts click');
+  await main.until('getComputedStyle(document.body, "::before").visibility === "hidden"');
+  const footerLink = '.footer-links a[href="terms.html"]';
+  await main.run(`document.querySelector(${JSON.stringify(footerLink)}).scrollIntoView({ block: "center" })`);
+  const footerRest = await main.run(linkColor(footerLink));
+  assert.notEqual(footerRest, mutedColor);
+  await hover(footerLink);
+  await main.until(`${linkColor(footerLink)} === "${mutedColor}"`);
+  await main.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 0, y: 0 });
+  await main.until(`${linkColor(footerLink)} === "${footerRest}"`);
+  await main.run(`document.querySelector(${JSON.stringify(footerLink)}).focus()`);
+  await main.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+  await main.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+  await main.until(`document.activeElement.matches('.footer-links a[href="privacy.html"]:focus-visible')
+    && getComputedStyle(document.activeElement).outlineStyle === "solid"`);
+  await main.run('document.activeElement.blur(); window.scrollTo(0, 0)');
+  await main.send('Emulation.setDeviceMetricsOverride', { width: 320, height: 740, deviceScaleFactor: 1, mobile: true });
+  await main.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+  await main.navigate('index.html?mobile');
+  await main.until('location.search === "?mobile"');
+  await main.run('document.querySelector(".article-list > a").scrollIntoView({ block: "center" })');
+  await main.until('document.querySelector(".article-list > a").classList.contains("scroll-reveal")');
+  assert.equal(await main.run('getComputedStyle(document.querySelector(".article-list > a")).getPropertyValue("--reveal-distance").trim()'), '.75rem');
+  await main.run('window.scrollTo(0, 0)');
+  const tap = async selector => {
+    await main.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [await point(main, selector)] });
+    await main.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  };
+  await tap('#contact-menu summary');
+  await main.until('document.querySelector("#contact-menu").open');
+  await main.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 12, y: 650 }] });
+  await main.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await main.until('!document.querySelector("#contact-menu").open');
+  await tap('#contact-menu summary');
+  await main.until('document.querySelector("#contact-menu").open');
+  await tap('header .search');
+  await main.until('document.querySelector("#site-search").open && !document.querySelector("#contact-menu").open');
+  assert(await main.run('document.querySelector(".search-close").getBoundingClientRect().width === 44 && document.documentElement.scrollWidth <= innerWidth'));
+  await tap('.search-close');
+  await main.until('!document.querySelector("#site-search").open');
   await main.run('document.querySelector(\'[data-login-mode="otp"]\').click()');
+  assert(await main.run(equalLoginControls), 'mobile email field matches send-code button');
+  assert(await main.run(alignedLoginOptions), 'mobile login options fill the same width');
+  assert(await main.run('document.documentElement.scrollWidth <= innerWidth && document.querySelector(".back-to-top").hidden'));
+  await main.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+  assert(await main.run('getComputedStyle(document.querySelector("header")).animationName === "none"'));
+  await main.run('document.querySelector(".grid > .tile").scrollIntoView({ block: "center" })');
+  assert(await main.run(`!${productCards}.some(${revealIsPlaying})`), 'reduced motion shows cards immediately');
+  await main.run('window.scrollTo(0, document.body.scrollHeight)');
+  await main.until(`(() => {
+    const button = document.querySelector(".back-to-top");
+    return !button.hidden && button.getBoundingClientRect().bottom <= document.querySelector(".footer-bottom").getBoundingClientRect().top;
+  })()`);
+  const footerLayout = await main.run(`(() => {
+    const copyright = document.querySelector(".footer-copyright");
+    const label = document.querySelector(".footer-language summary").getBoundingClientRect();
+    const text = copyright.getBoundingClientRect();
+    const footer = document.querySelector(".footer-bottom").getBoundingClientRect();
+    const back = document.querySelector(".back-to-top").getBoundingClientRect();
+    return { text: text.toJSON(), label: label.toJSON(), footer: footer.toJSON(), back: back.toJSON(),
+      lineHeight: parseFloat(getComputedStyle(copyright).lineHeight), viewport: innerWidth };
+  })()`);
+  const { text, label, footer, back, lineHeight, viewport } = footerLayout;
+  assert(text.right <= label.left && Math.abs(text.height - lineHeight) < 1
+    && Math.abs((text.top + text.bottom) - (label.top + label.bottom)) < 1
+    && label.right <= viewport && back.bottom <= footer.top,
+  'footer copyright and language fit on one row at 320px: ' + JSON.stringify(footerLayout));
+  await tap('.footer-language summary');
+  await main.until('document.querySelector(".footer-language").open');
+  await tap('.language-options button');
+  await main.until('!document.querySelector(".footer-language").open');
+  await tap('.back-to-top');
+  await main.until('window.scrollY === 0 && document.querySelector(".back-to-top").hidden && document.activeElement.classList.contains("brand")');
+  await main.send('Emulation.setEmulatedMedia', { features: [] });
+  await main.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+  await main.send('Emulation.clearDeviceMetricsOverride');
   failOtp = true;
   await main.run('document.querySelector("#login-email").value="test@example.com";document.querySelector("#login").requestSubmit()');
   await main.until('document.querySelector("[data-auth-status]").textContent.includes("过于频繁")');
@@ -125,7 +312,21 @@ async function connect(id) {
   const second = await connect(secondId);
   await second.navigate('account.html');
   assert.equal(await second.run('document.querySelector("#email").textContent'), account.email);
+  assert(await second.run(`(() => {
+    const button = document.querySelector("#account-settings");
+    return button.classList.contains("icon-button") && button.getAttribute("aria-label") === "设置"
+      && button.querySelector("svg") && !button.textContent.trim();
+  })()`), 'account settings is an accessible icon button');
+  const accountHeadingAligned = `(() => {
+    const title = document.querySelector("main h1").getBoundingClientRect();
+    const settings = document.querySelector("#account-settings").getBoundingClientRect();
+    const header = document.querySelector("header").getBoundingClientRect();
+    return title.right < settings.left && Math.abs((title.top + title.bottom) - (settings.top + settings.bottom)) < 1
+      && Math.min(title.top, settings.top) - header.bottom >= 32;
+  })()`;
+  assert(await second.run(accountHeadingAligned), 'account title and settings align on desktop with space below the header');
   await second.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  assert(await second.run(accountHeadingAligned), 'account title and settings align on mobile with space below the header');
   assert.equal(await second.run('document.querySelector("#password-help").textContent'), '现在设置密码');
   await second.run('document.querySelector("#password-help").click()');
   assert(await second.run('document.querySelector("#password-help-dialog").open && document.querySelector("#password-help-message").textContent.includes("右上角")'));
@@ -214,6 +415,6 @@ async function connect(id) {
   expireUser = true;
   await main.navigate('account.html');
   assert(await main.run('document.querySelector("#name").textContent === "访客"'));
-  console.log('PASS: password sign-in without email; OTP fallback; password help, setup and visibility; nickname and avatar settings; signup, resend and recovery; session restoration and logout; mobile layout. Mock API only.');
+  console.log('PASS: password sign-in without email; OTP fallback; password help, setup and visibility; nickname and avatar settings; signup, resend and recovery; session restoration and logout; responsive controls, hover navigation, touch and back to top. Mock API only.');
   await main.send('Browser.close');
 })().catch(error => { console.error(error); process.exitCode=1; }).finally(() => { sockets.forEach(socket=>socket.close()); browser.kill(); });
